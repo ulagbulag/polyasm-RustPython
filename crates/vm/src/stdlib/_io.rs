@@ -6,6 +6,9 @@ pub(crate) use _io::module_def;
 #[cfg(all(unix, feature = "threading", feature = "host_env"))]
 pub(crate) use _io::reinit_std_streams_after_fork;
 
+#[cfg(target_abi = "polyasm")]
+use rustpython_host_env::libc;
+
 cfg_select! {
     any(not(target_arch = "wasm32"), target_os = "wasi") => {
         use rustpython_host_env::crt_fd::Offset;
@@ -6047,7 +6050,7 @@ mod fileio {
                     (fd, None)
                 } else {
                     let path = OsPath::try_from_fspath(name.clone(), vm)?;
-                    #[cfg(any(unix, target_os = "wasi"))]
+                    #[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
                     let fd = host_io::open_path(&path.clone().into_cstring(vm)?, flags, 0o666);
                     #[cfg(windows)]
                     let fd = host_io::open_path(&path.to_wide_cstring(vm)?, flags, 0o666);

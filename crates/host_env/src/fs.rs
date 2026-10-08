@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(not(target_abi = "polyasm"))]
 mod append_log;
+#[cfg(not(target_abi = "polyasm"))]
 pub use append_log::AppendLog;
 
 pub fn open(path: impl AsRef<Path>) -> io::Result<File> {
@@ -64,7 +66,7 @@ pub fn canonicalize(path: impl AsRef<Path>) -> io::Result<PathBuf> {
 }
 
 /// Resolve `binary_name` to an absolute path by searching `PATH` (and `PATHEXT` on Windows).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_abi = "polyasm")))]
 pub fn which<T: AsRef<std::ffi::OsStr>>(binary_name: T) -> Option<PathBuf> {
     ::which::which(binary_name).ok()
 }

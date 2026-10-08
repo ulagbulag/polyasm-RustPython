@@ -1,7 +1,22 @@
 //! Compile a Python AST or source code into bytecode consumable by RustPython.
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(any(not(feature = "std"), target_abi = "polyasm"), no_std)]
+#![cfg_attr(
+    target_abi = "polyasm",
+    feature(prelude_import),
+    allow(internal_features)
+)]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/RustPython/RustPython/main/logo.png")]
 #![doc(html_root_url = "https://docs.rs/rustpython-compiler/")]
+
+#[cfg(target_abi = "polyasm")]
+extern crate rustpython_std as std;
+#[cfg(target_abi = "polyasm")]
+#[prelude_import]
+#[allow(
+    unused_imports,
+    reason = "names reach the crate through prelude resolution"
+)]
+use std::prelude::rust_2024::*;
 
 #[macro_use]
 extern crate log;

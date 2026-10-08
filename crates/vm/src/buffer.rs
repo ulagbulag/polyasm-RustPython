@@ -129,7 +129,7 @@ impl ByteOrder for LittleEndian {
 
 type NativeEndian = cfg_select! {
     target_endian = "big" => BigEndian,
-    target_endian = "little" => LittleEndian,
+    any(target_endian = "little", target_abi = "polyasm") => LittleEndian,
 };
 
 #[derive(Copy, Clone, num_enum::TryFromPrimitive, Eq, PartialEq)]

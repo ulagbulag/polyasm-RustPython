@@ -31,6 +31,17 @@ malachite-bigint = { workspace = true }
 memchr = { workspace = true }
 rapidhash = { workspace = true }
 
+[target.'cfg(not(target_abi = "polyasm"))'.dependencies]
+num-complex = { workspace = true, features = ["std"] }
+num-traits = { workspace = true, features = ["std"] }
+ruff_python_ast = { workspace = true, features = ["std"] }
+ruff_text_size = { workspace = true, features = ["std"] }
+
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+num-complex = { workspace = true, features = ["libm"] }
+num-traits = { workspace = true, features = ["libm"] }
+rustpython-std = { workspace = true }
+
 [dev-dependencies]
 ruff_python_parser = { workspace = true }
 

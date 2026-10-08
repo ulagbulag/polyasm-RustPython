@@ -1,12 +1,14 @@
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 use core::ffi::CStr;
 use std::io;
 
 #[cfg(any(unix, target_os = "wasi"))]
 use rustix::{fs::FileType, io::Errno};
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 use crate::fileutils;
+#[cfg(target_abi = "polyasm")]
+use crate::libc_polyasm as libc;
 use crate::{crt_fd, os};
 
 bitflagset::bitflag! {
@@ -172,6 +174,16 @@ pub fn inspect_file_target(fd: crt_fd::Borrowed<'_>) -> io::Result<FileTargetInf
     Ok(FileTargetInfo { blksize })
 }
 
+#[cfg(target_abi = "polyasm")]
+pub fn inspect_file_target(fd: crt_fd::Borrowed<'_>) -> io::Result<FileTargetInfo> {
+    let status = fileutils::fstat(fd)?;
+    if status.st_mode & libc::S_IFMT == libc::S_IFDIR {
+        return Err(io::Error::from_raw_os_error(libc::EISDIR));
+    }
+    let blksize = (status.st_blksize > 1).then_some(status.st_blksize);
+    Ok(FileTargetInfo { blksize })
+}
+
 #[cfg(windows)]
 pub fn inspect_file_target(fd: crt_fd::Borrowed<'_>) -> io::Result<FileTargetInfo> {
     if !crate::nt::fd_exists(fd) {
@@ -182,7 +194,7 @@ pub fn inspect_file_target(fd: crt_fd::Borrowed<'_>) -> io::Result<FileTargetInf
     Ok(FileTargetInfo { blksize: None })
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 pub fn open_path(path: &CStr, flags: i32, mode: i32) -> io::Result<crt_fd::Owned> {
     crt_fd::open(path, flags, mode)
 }
@@ -197,7 +209,7 @@ pub fn should_forget_fd_after_inspect_error(err: &io::Error, _fd_is_own: bool) -
     err.raw_os_error() == Some(crate::nt::ERROR_INVALID_HANDLE_I32)
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 pub fn should_forget_fd_after_inspect_error(err: &io::Error, fd_is_own: bool) -> bool {
     let errno = err.raw_os_error();
     (errno == Some(libc::EISDIR) || errno == Some(libc::EBADF))
@@ -295,7 +307,7 @@ pub fn close_owned_fd(fd: crt_fd::Owned) -> io::Result<()> {
 /// Async-signal-safe raw write to the platform stderr file descriptor.
 /// Avoids `std::io::stderr()` locking so it is safe to call from fork
 /// children and signal handlers.
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn write_stderr_raw(buf: &[u8]) {
     unsafe {
         let _ = libc::write(libc::STDERR_FILENO, buf.as_ptr().cast(), buf.len());

@@ -13,15 +13,15 @@ mod decl {
     #![allow(unreachable_pub)]
 
     #[cfg(any(unix, windows))]
-    use crate::builtins::PyBaseExceptionRef;
+    use crate::builtins::{PyBaseExceptionRef, PyStr};
     use crate::{
         AsObject, Py, PyObjectRef, PyResult, VirtualMachine,
-        builtins::{PyStr, PyStrRef, PyTypeRef},
+        builtins::{PyStrRef, PyTypeRef},
         class::PyClassDef,
         function::{Either, FuncArgs, OptionalArg, OptionalOption},
         types::{PyStructSequence, PyStructSequenceData, struct_sequence_new},
     };
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     use crate::{
         PyRef,
         builtins::{PyNamespace, PyUtf8StrRef},
@@ -34,7 +34,7 @@ mod decl {
     use core::time::Duration;
     #[cfg(not(any(unix, windows)))]
     use jiff::{Timestamp, Zoned, civil::DateTime, tz::TimeZone};
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     use rustpython_host_env::time::ClockId;
     #[cfg(any(unix, windows))]
     use rustpython_host_env::time::asctime_from_tm;
@@ -65,29 +65,29 @@ mod decl {
     #[pyattr]
     pub const _STRUCT_TM_ITEMS: usize = 11;
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     fn get_clock_time(id: ClockId, vm: &VirtualMachine) -> PyResult<Duration> {
         host_time::clock_gettime(id).map_err(|err| vm.new_os_error(err.to_string()))
     }
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     fn get_monotonic_time(vm: &VirtualMachine) -> PyResult<Duration> {
         get_clock_time(ClockId::CLOCK_MONOTONIC, vm)
     }
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     fn get_perf_time(vm: &VirtualMachine) -> PyResult<Duration> {
         get_clock_time(ClockId::CLOCK_MONOTONIC, vm)
     }
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     fn clock_getres(id: ClockId, vm: &VirtualMachine) -> PyResult<f64> {
         host_time::clock_getres(id)
             .map(|d| d.as_secs_f64())
             .map_err(|err| vm.new_os_error(err.to_string()))
     }
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
     #[pyfunction]
     fn get_clock_info(name: PyUtf8StrRef, vm: &VirtualMachine) -> PyResult<PyRef<PyNamespace>> {
         let (adj, imp, mono, res) = match name.as_str() {
@@ -114,12 +114,12 @@ mod decl {
         }))
     }
 
-    #[cfg(not(any(unix, windows, target_os = "wasi")))]
+    #[cfg(not(any(unix, windows, target_os = "wasi", target_abi = "polyasm")))]
     fn get_monotonic_time(vm: &VirtualMachine) -> PyResult<Duration> {
         duration_since_system_now(vm)
     }
 
-    #[cfg(not(any(unix, windows, target_os = "wasi")))]
+    #[cfg(not(any(unix, windows, target_os = "wasi", target_abi = "polyasm")))]
     fn get_perf_time(vm: &VirtualMachine) -> PyResult<Duration> {
         duration_since_system_now(vm)
     }
@@ -338,11 +338,27 @@ mod decl {
             .map_err(|_| vm.new_overflow_error("timestamp out of range for platform time_t"))
     }
 
+    /// The current instant in the system time zone.
+    #[cfg(not(any(unix, windows)))]
+    fn zoned_now(vm: &VirtualMachine) -> PyResult<Zoned> {
+        cfg_select! {
+            target_abi = "polyasm" => {
+                let now = duration_since_system_now(vm)?;
+                let timestamp = Timestamp::new(now.as_secs() as i64, now.subsec_nanos() as i32)
+                    .map_err(|_| {
+                        vm.new_overflow_error("timestamp out of range for platform time_t")
+                    })?;
+                Ok(timestamp.to_zoned(TimeZone::system()))
+            }
+            _ => Ok(Zoned::now()),
+        }
+    }
+
     #[cfg(not(any(unix, windows)))]
     fn naive_or_local(secs: Option<Either<f64, i64>>, vm: &VirtualMachine) -> PyResult<Zoned> {
         Ok(match secs {
             Some(secs) => pyobj_to_timestamp(secs, vm)?.to_zoned(TimeZone::system()),
-            None => Zoned::now(),
+            None => zoned_now(vm)?,
         })
     }
 
@@ -462,7 +478,7 @@ mod decl {
         fn naive_or_local(self, vm: &VirtualMachine) -> PyResult<DateTime> {
             Ok(match self {
                 Self::Present(t) => t.to_date_time(vm)?,
-                Self::Missing => Zoned::now().datetime(),
+                Self::Missing => zoned_now(vm)?.datetime(),
             })
         }
     }
@@ -486,7 +502,7 @@ mod decl {
             _ => {
                 let instant = match secs {
                     Some(secs) => pyobj_to_timestamp(secs, vm)?.to_zoned(TimeZone::UTC),
-                    None => Zoned::now().with_time_zone(TimeZone::UTC),
+                    None => zoned_now(vm)?.with_time_zone(TimeZone::UTC),
                 };
                 Ok(StructTimeData::new_utc(vm, instant))
             }

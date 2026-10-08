@@ -116,10 +116,10 @@ def _getuserbase():
     if env_base:
         return env_base
 
-    # Emscripten, iOS, tvOS, VxWorks, WASI, and watchOS have no home directories.
+    # Emscripten, iOS, PolyASM, tvOS, VxWorks, WASI, and watchOS have no home directories.
     # Use _PYTHON_HOST_PLATFORM to get the correct platform when cross-compiling.
     system_name = os.environ.get('_PYTHON_HOST_PLATFORM', sys.platform).split('-')[0]
-    if system_name in {"emscripten", "ios", "tvos", "vxworks", "wasi", "watchos"}:
+    if system_name in {"emscripten", "ios", "polyasm", "tvos", "vxworks", "wasi", "watchos"}:
         return None
 
     def joinuser(*args):

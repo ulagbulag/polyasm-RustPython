@@ -2,6 +2,8 @@ pub(crate) use _functools::module_def;
 
 #[pymodule]
 mod _functools {
+    #[cfg(target_abi = "polyasm")]
+    use crate::common::lock::parking_lot;
     use crate::{
         Context, Py, PyObject, PyObjectRef, PyPayload, PyResult, VirtualMachine,
         builtins::{

@@ -9,6 +9,8 @@
 //! an isolated `PyGlobalState` (modules, codecs, thread registry, stop-the-world, …)
 //! while sharing the process-wide [`crate::Context`] (builtin types / immortals).
 
+#[cfg(target_abi = "polyasm")]
+use crate::common::lock::parking_lot;
 use crate::common::rc::PyRc;
 use crate::vm::PyGlobalState;
 use core::sync::atomic::{AtomicI64, Ordering};

@@ -13,6 +13,20 @@ pub fn strerror_string(errno: i32) -> Option<String> {
     Some(s.into_owned())
 }
 
+/// Return the `strerror(errno)` message of the Linux errno table as an owned `String`.
+/// Returns `None` when the table holds no description for `errno`.
+#[cfg(target_abi = "polyasm")]
+#[must_use]
+pub fn strerror_string(errno: i32) -> Option<String> {
+    std::os::polyasm::errno::strerror(errno).map(str::to_owned)
+}
+
+/// The Linux errno numbers the host answers with.
+#[cfg(target_abi = "polyasm")]
+pub mod errors {
+    pub use std::os::polyasm::errno::*;
+}
+
 #[cfg(any(unix, windows, target_os = "wasi"))]
 pub mod errors {
     pub use libc::*;

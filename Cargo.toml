@@ -128,6 +128,57 @@ strip = true
 panic = "abort"
 
 [patch.crates-io]
+# The polyasm forks: the `std` features of the Ruff crates and the PolyASM arms (byte order,
+# `no_std`) every crate below carries.
+aho-corasick = { git = "https://github.com/ulagbulag/polyasm-aho-corasick", branch = "feat/polyasm" }
+arrayvec = { git = "https://github.com/ulagbulag/polyasm-arrayvec", branch = "feat/polyasm" }
+bstr = { git = "https://github.com/ulagbulag/polyasm-bstr", branch = "feat/polyasm" }
+getrandom = { git = "https://github.com/ulagbulag/polyasm-getrandom", branch = "feat/polyasm" }
+icu_casemap = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_casemap_data = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_collections = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_locale = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_locale_core = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_locale_data = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_normalizer = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_normalizer_data = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_properties = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_properties_data = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+icu_provider = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+jiff = { git = "https://github.com/ulagbulag/polyasm-jiff", branch = "feat/polyasm" }
+litemap = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+lz4_flex = { git = "https://github.com/ulagbulag/polyasm-lz4_flex", branch = "feat/polyasm" }
+malachite-base = { git = "https://github.com/ulagbulag/polyasm-malachite", branch = "feat/polyasm" }
+malachite-bigint = { git = "https://github.com/ulagbulag/polyasm-malachite", branch = "feat/polyasm" }
+malachite-nz = { git = "https://github.com/ulagbulag/polyasm-malachite", branch = "feat/polyasm" }
+malachite-q = { git = "https://github.com/ulagbulag/polyasm-malachite", branch = "feat/polyasm" }
+memchr = { git = "https://github.com/ulagbulag/polyasm-memchr", branch = "feat/polyasm" }
+num-traits = { git = "https://github.com/ulagbulag/polyasm-num-traits", branch = "feat/polyasm" }
+portable-atomic = { git = "https://github.com/ulagbulag/polyasm-portable-atomic", branch = "feat/polyasm" }
+potential_utf = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+pymath = { git = "https://github.com/ulagbulag/polyasm-pymath", branch = "feat/polyasm" }
+regex = { git = "https://github.com/ulagbulag/polyasm-regex", branch = "feat/polyasm" }
+regex-automata = { git = "https://github.com/ulagbulag/polyasm-regex", branch = "feat/polyasm" }
+regex-syntax = { git = "https://github.com/ulagbulag/polyasm-regex", branch = "feat/polyasm" }
+rustpython-ruff_python_ast = { git = "https://github.com/ulagbulag/polyasm-ruff", branch = "feat/polyasm" }
+rustpython-ruff_python_parser = { git = "https://github.com/ulagbulag/polyasm-ruff", branch = "feat/polyasm" }
+rustpython-ruff_python_trivia = { git = "https://github.com/ulagbulag/polyasm-ruff", branch = "feat/polyasm" }
+rustpython-ruff_source_file = { git = "https://github.com/ulagbulag/polyasm-ruff", branch = "feat/polyasm" }
+rustpython-ruff_text_size = { git = "https://github.com/ulagbulag/polyasm-ruff", branch = "feat/polyasm" }
+serde_core = { git = "https://github.com/ulagbulag/polyasm-serde", branch = "feat/polyasm" }
+smallvec = { git = "https://github.com/ulagbulag/polyasm-rust-smallvec", branch = "feat/polyasm" }
+tinystr = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+wide = { git = "https://github.com/ulagbulag/polyasm-wide", branch = "feat/polyasm" }
+writeable = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+yoke = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+yoke-derive = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+zerocopy = { git = "https://github.com/ulagbulag/polyasm-zerocopy", branch = "feat/polyasm" }
+zerocopy-derive = { git = "https://github.com/ulagbulag/polyasm-zerocopy", branch = "feat/polyasm" }
+zerofrom = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+zerofrom-derive = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+zerotrie = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+zerovec = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
+zerovec-derive = { git = "https://github.com/ulagbulag/polyasm-icu4x", branch = "feat/polyasm" }
 # parking_lot_core = { git = "https://github.com/youknowone/parking_lot", branch = "rustpython" }
 # REDOX START, Uncomment when you want to compile/check with redoxer
 # REDOX END
@@ -171,7 +222,7 @@ license = "MIT"
 rustpython-capi = { path = "crates/capi", version = "0.6.0" }
 rustpython-compiler-core = { path = "crates/compiler-core", version = "0.6.0" }
 rustpython-compiler = { path = "crates/compiler", version = "0.6.0" }
-rustpython-codegen = { path = "crates/codegen", version = "0.6.0" }
+rustpython-codegen = { path = "crates/codegen", default-features = false, version = "0.6.0" }
 rustpython-common = { path = "crates/common", version = "0.6.0" }
 rustpython-host_env = { path = "crates/host_env", version = "0.6.0" }
 rustpython-derive = { path = "crates/derive", version = "0.6.0" }
@@ -182,56 +233,56 @@ rustpython-vm = { path = "crates/vm", default-features = false, version = "0.6.0
 rustpython-pylib = { path = "crates/pylib", version = "0.6.0" }
 rustpython-stdlib = { path = "crates/stdlib", default-features = false, version = "0.6.0" }
 rustpython-sre_engine = { path = "crates/sre_engine", version = "0.6.0" }
+rustpython-std = { path = "crates/std", version = "0.6.0" }
 rustpython-unicode = { path = "crates/unicode", version = "0.6.0" }
 rustpython-wtf8 = { path = "crates/wtf8", version = "0.6.0" }
 rustpython-doc = { path = "crates/doc", version = "0.6.0" }
 
 # Use the RustPython Ruff fork for RustPython public `_ast` metadata.
-ruff_python_parser = { package = "rustpython-ruff_python_parser", version = "0.16.5" }
-ruff_python_ast = { package = "rustpython-ruff_python_ast", version = "0.16.5" }
-ruff_text_size = { package = "rustpython-ruff_text_size", version = "0.16.5" }
-ruff_source_file = { package = "rustpython-ruff_source_file", version = "0.16.5" }
+ruff_python_parser = { package = "rustpython-ruff_python_parser", version = "0.16.5", default-features = false }
+ruff_python_ast = { package = "rustpython-ruff_python_ast", version = "0.16.5", default-features = false }
+ruff_text_size = { package = "rustpython-ruff_text_size", version = "0.16.5", default-features = false }
+ruff_source_file = { package = "rustpython-ruff_source_file", version = "0.16.5", default-features = false }
 
 der = { version = "0.8", features = ["alloc", "oid", "pem", "zeroize"] }
 phf = { version = "0.14.0", default-features = false, features = ["macros"]}
-adler32 = "1.2.0"
+adler32 = { version = "1.2.0", default-features = false }
 approx = "0.5.1"
 ascii = { version = "1.1", default-features = false }
-base64 = "0.23"
-blake2b_simd = "1.0.4"
-blake2s_simd = "1.0.4"
+base64 = { version = "0.23", default-features = false, features = ["alloc"] }
+blake2b_simd = { version = "1.0.4", default-features = false }
+blake2s_simd = { version = "1.0.4", default-features = false }
 bitflags = "2.11.0"
-bitflagset = "0.0.4"
+bitflagset = { version = "0.0.4", default-features = false, features = ["alloc"] }
 bstr = { version = "1", default-features = false, features = ["unicode"] }
 bzip2 = "0.6"
 console_error_panic_hook = "0.1"
-constant_time_eq = "0.6"
+constant_time_eq = { version = "0.6", default-features = false }
 cranelift = "0.135.0"
 cranelift-jit = "0.135.0"
 cranelift-module = "0.135.0"
-crc32fast = "1.3.2"
+crc32fast = { version = "1.3.2", default-features = false }
 criterion = { package = "codspeed-criterion-compat", version = "5.0.1", features = ["html_reports"] }
-crossbeam-utils = "0.8.21"
+crossbeam-utils = { version = "0.8.21", default-features = false }
 dns-lookup = "4.0"
 flame = "0.2.2"
 flamer = "0.5"
 # Bump only when the openssl crate bumps it
 foreign-types-shared = "0.1"
 gethostname = "1.0.2"
-getrandom = { version = "0.4", features = ["std"] }
+getrandom = { version = "0.4", default-features = false }
 glob = "0.3"
-half = "2"
-hex = "0.4.3"
-hexf-parse = "0.2.1"
-indexmap = { version = "2.14.0", features = ["std"] }
+half = { version = "2", default-features = false }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47"
 itertools = { version = "0.15.0", default-features = false, features = ["use_alloc"] }
 itoa = "1"
 is-macro = "0.3.7"
-jiff = "0.2"
+jiff = { version = "0.2", default-features = false, features = ["alloc"] }
 js-sys = "0.3"
 junction = "2.0.0"
-lexical-parse-float = "1.0.6"
+lexical-parse-float = { version = "1.0.6", default-features = false }
 libc = "0.2.186"
 libffi = "5"
 libloading = "0.9"
@@ -242,24 +293,23 @@ libz-rs-sys = "0.6"
 zlib-rs = { version = "=0.6.8", default-features = false, features = ["rust-allocator", "__internal-api"] }
 lock_api = "0.4"
 log = "0.4.30"
-lz4_flex = "0.14"
+lz4_flex = { version = "0.14", default-features = false, features = ["alloc", "checked-decode", "safe-decode", "safe-encode"] }
 nix = { version = "0.31", features = ["fs", "user", "process", "term", "time", "signal", "ioctl", "socket", "sched", "zerocopy", "dir", "hostname", "net", "poll"] }
 mac_address = "1.1.3"
-malachite-bigint = "0.12.0"
-malachite-q = "0.12.0"
-malachite-base = "0.12.0"
+malachite-bigint = { version = "0.12.0", default-features = false }
+malachite-q = { version = "0.12.0", default-features = false }
+malachite-base = { version = "0.12.0", default-features = false }
 md-5 = "0.11"
 memchr = { version = "2.8.1", default-features = false, features = ["alloc"] }
 memmap2 = "0.9.10"
 mt19937 = "3.3"
-num-complex = "0.4.6"
-num-integer = "0.1.46"
-num-traits = "0.2"
+num-complex = { version = "0.4.6", default-features = false }
+num-integer = { version = "0.1.46", default-features = false }
+num-traits = { version = "0.2", default-features = false }
 num_cpus = "1.17.0"
 num_enum = { version = "0.7", default-features = false }
 openssl = "0.10.80"
 openssl-sys = "0.9.110"
-optional = "0.5"
 parking_lot = "0.12.3"
 paste = "1.0.15"
 pem-rfc7468 = "1.0"
@@ -270,8 +320,8 @@ pymath = { version = "0.2.0", features = ["mul_add", "malachite-bigint", "comple
 pyo3 = "0.29"
 quote = "1.0.45"
 radium = "1.1.1"
-rand = "0.10"
-rapidhash = "4.4.1"
+rand = { version = "0.10", default-features = false }
+rapidhash = { version = "4.4.1", default-features = false }
 result-like = "0.5.0"
 rustix = { version = "1.1", features = ["event", "fs", "param", "system"] }
 rustls = { version = "0.23.39", default-features = false }
@@ -282,32 +332,32 @@ rustls-webpki = { version = "0.103", default-features = false, features = ["std"
 rustyline = "18"
 serde = { package = "serde_core", version = "1.0.225", default-features = false, features = ["alloc"] }
 schannel = "0.1.29"
-scopeguard = "1"
+scopeguard = { version = "1", default-features = false }
 scrypt = { version = "0.12", default-features = false }
 serde-wasm-bindgen = "0.6.5"
 sha1 = "0.11"
 sha2 = "0.11"
 sha3 = "0.12"
 shake = "0.1"
-siphasher = "1"
+siphasher = { version = "1", default-features = false }
 socket2 = "0.6.4"
 static_assertions = "1.1"
-strum = "0.28"
+strum = { version = "0.28", default-features = false }
 strum_macros = "0.28"
 syn = "2"
 syn-ext = "0.5.0"
 system-configuration = "0.8.0"
 textwrap = { version = "0.16.2", default-features = false }
 termios = "0.3.3"
-thiserror = "2.0"
-thin-vec = "0.2.14"
+thiserror = { version = "2.0", default-features = false }
+thin-vec = { version = "0.2.14", default-features = false }
 icu_casemap = "2"
 icu_locale = "2"
 icu_properties = "2"
 icu_normalizer = "2"
 uuid = "1.23.2"
 unicode_names2 = { version = "3", default-features = false, features = ["no_std"] }
-widestring = "1.2.0"
+widestring = { version = "1.2.0", default-features = false, features = ["alloc"] }
 windows-sys = "0.61.2"
 wasm-bindgen = "0.2.106"
 wasm-bindgen-futures = "0.4"
@@ -325,6 +375,7 @@ unsafe_code = "allow"
 unsafe_op_in_unsafe_fn = "deny"
 elided_lifetimes_in_paths = "warn"
 unreachable_pub = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_abi, values("polyasm"))'] }
 
 [workspace.lints.clippy]
 correctness = { level = "warn", priority = -2 }

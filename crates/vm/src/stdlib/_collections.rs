@@ -396,7 +396,7 @@ mod _collections {
             let index = self.mut_index_range(vm, &needle, start..stop)?;
             if start_state != self.state.load() {
                 Err(vm.new_runtime_error("deque mutated during iteration"))
-            } else if let Some(index) = index.into() {
+            } else if let Some(index) = index {
                 Ok(index)
             } else {
                 Err(vm.new_value_error(

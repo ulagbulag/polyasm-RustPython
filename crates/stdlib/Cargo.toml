@@ -30,7 +30,7 @@ __ssl-rustls = ["ssl", "rustpython-host_env/ssl", "rustpython-host_env/rustls", 
 # rustpython crates
 rustpython-derive = { workspace = true }
 rustpython-vm = { workspace = true, default-features = false, features = ["compiler"]}
-rustpython-common = { workspace = true, features = ["binascii", "bz2", "cjk-codecs", "hashlib", "inet", "json", "lzma", "zlib"] }
+rustpython-common = { workspace = true, features = ["binascii", "cjk-codecs", "hashlib", "inet", "json"] }
 rustpython-host_env = { workspace = true }
 rustpython-unicode = { workspace = true }
 
@@ -43,7 +43,6 @@ ascii = { workspace = true }
 crossbeam-utils = { workspace = true }
 flame = { workspace = true, optional = true }
 hex = { workspace = true }
-getrandom = { workspace = true }
 itertools = { workspace = true }
 indexmap = { workspace = true }
 libc = { workspace = true }
@@ -51,14 +50,11 @@ num-complex = { workspace = true }
 malachite-bigint = { workspace = true }
 num-traits = { workspace = true }
 num_enum = { workspace = true }
-parking_lot = { workspace = true }
-phf = { workspace = true, default-features = true, features = ["macros"] }
 rapidhash = { workspace = true }
 scopeguard = { workspace = true }
 
 memchr = { workspace = true }
 pymath = { workspace = true }
-xml = { workspace = true }
 
 # random
 rand = { workspace = true }
@@ -67,28 +63,45 @@ mt19937 = { workspace = true }
 # Crypto:
 constant_time_eq = { workspace = true }
 
-# compression
+[target.'cfg(not(target_abi = "polyasm"))'.dependencies]
 adler32 = { workspace = true }
+getrandom = { workspace = true, features = ["std"] }
+num-complex = { workspace = true, features = ["std"] }
+num-traits = { workspace = true, features = ["std"] }
+parking_lot = { workspace = true }
+phf = { workspace = true, features = ["macros", "std"] }
+rand = { workspace = true, features = ["std", "std_rng", "sys_rng", "thread_rng"] }
+ruff_python_ast = { workspace = true, features = ["std"] }
+ruff_python_parser = { workspace = true, features = ["std"] }
+ruff_source_file = { workspace = true, features = ["std"] }
+ruff_text_size = { workspace = true, features = ["std"] }
+rustpython-common = { workspace = true, features = ["bz2", "lzma", "zlib"] }
+xml = { workspace = true }
+
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+num-complex = { workspace = true, features = ["libm"] }
+num-traits = { workspace = true, features = ["libm"] }
+rustpython-std = { workspace = true }
 
 # uuid
-[target.'cfg(not(any(target_os = "ios", target_os = "android", target_os = "windows", target_arch = "wasm32", target_os = "redox")))'.dependencies]
+[target.'cfg(not(any(target_os = "ios", target_os = "android", target_os = "windows", target_arch = "wasm32", target_os = "redox", target_abi = "polyasm")))'.dependencies]
 uuid = { workspace = true, features = ["v1"] }
 
 # mmap + socket + OpenSSL dependencies
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(not(any(target_arch = "wasm32", target_abi = "polyasm")))'.dependencies]
 openssl = { workspace = true, optional = true }
 openssl-sys = { workspace = true, optional = true }
 foreign-types-shared = { workspace = true, optional = true }
 
 # Rustls is the WASI TLS engine as well as the native one.
-[target.'cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))'.dependencies]
+[target.'cfg(all(any(not(target_arch = "wasm32"), target_os = "wasi"), not(target_abi = "polyasm")))'.dependencies]
 rustls = { workspace = true, default-features = false, features = ["std", "tls12"], optional = true }
 rustls-pemfile = { workspace = true, optional = true }
 x509-parser = { workspace = true, optional = true }
 pem-rfc7468 = { workspace = true, features = ["alloc"], optional = true }
 webpki-roots = { workspace = true, optional = true }
 
-[target.'cfg(not(any(target_os = "android", target_arch = "wasm32")))'.dependencies]
+[target.'cfg(not(any(target_os = "android", target_arch = "wasm32", target_abi = "polyasm")))'.dependencies]
 libsqlite3-sys = { workspace = true, features = ["bundled"], optional = true }
 
 [target.'cfg(windows)'.dependencies]

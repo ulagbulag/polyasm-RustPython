@@ -658,12 +658,12 @@ enum StandardEncoding {
 
 impl StandardEncoding {
     const UTF_16_NE: Self = cfg_select! {
-        target_endian = "little" => Self::Utf16Le,
+        any(target_endian = "little", target_abi = "polyasm") => Self::Utf16Le,
         target_endian = "big" => Self::Utf16Be,
     };
 
     const UTF_32_NE: Self = cfg_select! {
-        target_endian = "little" => Self::Utf32Le,
+        any(target_endian = "little", target_abi = "polyasm") => Self::Utf32Le,
         target_endian = "big" => Self::Utf32Be,
     };
 

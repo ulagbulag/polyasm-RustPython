@@ -9,6 +9,8 @@ pub(crate) use _interpqueues::{
 
 #[pymodule]
 pub(crate) mod _interpqueues {
+    #[cfg(target_abi = "polyasm")]
+    use crate::common::lock::parking_lot;
     use crate::{
         AsObject, Py, PyObject, PyPayload, PyResult, VirtualMachine,
         builtins::{PyBaseExceptionRef, PyModule, PyType, PyTypeRef},

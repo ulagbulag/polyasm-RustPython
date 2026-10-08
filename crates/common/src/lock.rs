@@ -51,6 +51,8 @@ cfg_select! {
 mod detaching;
 pub use detaching::RawDetachingRwLock;
 mod immutable_mutex;
+#[cfg(target_abi = "polyasm")]
+pub mod parking_lot;
 pub use immutable_mutex::*;
 mod thread_mutex;
 pub use thread_mutex::*;

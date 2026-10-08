@@ -5,7 +5,7 @@ use alloc::fmt;
 use core::cmp;
 use std::{ffi, io};
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 use std::os::fd::AsFd;
 #[cfg(not(windows))]
 use std::os::fd::{AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd, RawFd};
@@ -13,6 +13,9 @@ use std::os::fd::{AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd, RawFd};
 use std::os::windows::io::BorrowedHandle;
 
 mod c {
+    #[cfg(target_abi = "polyasm")]
+    pub(super) use crate::libc_polyasm::*;
+    #[cfg(not(target_abi = "polyasm"))]
     pub(super) use libc::*;
 
     #[cfg(windows)]
@@ -37,8 +40,8 @@ pub type Raw = cfg_select! {
 };
 
 #[inline]
-fn cvt<I: num_traits::PrimInt>(ret: I) -> io::Result<I> {
-    if ret < I::zero() {
+fn cvt<I: Default + PartialOrd>(ret: I) -> io::Result<I> {
+    if ret < I::default() {
         // CRT functions set errno, not GetLastError(), so use errno_io_error
         Err(crate::os::errno_io_error())
     } else {
@@ -209,42 +212,42 @@ impl Owned {
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl From<Owned> for OwnedFd {
     fn from(fd: Owned) -> Self {
         fd.inner
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl From<OwnedFd> for Owned {
     fn from(fd: OwnedFd) -> Self {
         Self { inner: fd }
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl AsFd for Owned {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.as_fd()
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl AsRawFd for Owned {
     fn as_raw_fd(&self) -> RawFd {
         self.as_raw()
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl FromRawFd for Owned {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         unsafe { Self::from_raw(fd) }
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl IntoRawFd for Owned {
     fn into_raw_fd(self) -> RawFd {
         self.into_raw()
@@ -287,28 +290,28 @@ impl Borrowed<'_> {
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl<'fd> From<Borrowed<'fd>> for BorrowedFd<'fd> {
     fn from(fd: Borrowed<'fd>) -> Self {
         fd.inner
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl<'fd> From<BorrowedFd<'fd>> for Borrowed<'fd> {
     fn from(fd: BorrowedFd<'fd>) -> Self {
         Self { inner: fd }
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl AsFd for Borrowed<'_> {
     fn as_fd(&self) -> BorrowedFd<'_> {
         self.inner.as_fd()
     }
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 impl AsRawFd for Borrowed<'_> {
     fn as_raw_fd(&self) -> RawFd {
         self.as_raw()
@@ -329,7 +332,10 @@ pub fn wopen(path: &widestring::WideCStr, flags: i32, mode: i32) -> io::Result<O
     cvt_fd(unsafe { suppress_iph!(c::wopen(path.as_ptr(), flags, mode)) })
 }
 
-#[cfg(all(any(unix, target_os = "wasi"), not(target_os = "redox")))]
+#[cfg(all(
+    any(unix, target_os = "wasi", target_abi = "polyasm"),
+    not(target_os = "redox")
+))]
 pub fn openat(dir: Borrowed<'_>, path: &ffi::CStr, flags: i32, mode: i32) -> io::Result<Owned> {
     cvt_fd(unsafe { c::openat(dir.as_raw(), path.as_ptr(), flags, mode) })
 }
@@ -387,7 +393,7 @@ fn _write(fd: Raw, buf: &[u8]) -> io::Result<usize> {
 
 fn _read(fd: Raw, buf: &mut [u8]) -> io::Result<usize> {
     let count = cmp::min(buf.len(), MAX_RW);
-    let n = cvt(unsafe { suppress_iph!(libc::read(fd, buf.as_mut_ptr() as _, count as _)) })?;
+    let n = cvt(unsafe { suppress_iph!(c::read(fd, buf.as_mut_ptr() as _, count as _)) })?;
     Ok(n as usize)
 }
 

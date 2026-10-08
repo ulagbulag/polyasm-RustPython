@@ -30,14 +30,8 @@ rustls = [
 [dependencies]
 rustpython-wtf8 = { workspace = true }
 
-bitflags = { workspace = true }
 bitflagset = { workspace = true }
 der = { workspace = true, optional = true }
-getrandom = { workspace = true }
-libc = { workspace = true }
-num-traits = { workspace = true }
-parking_lot = { workspace = true }
-paste = { workspace = true }
 pkcs8 = { workspace = true, features = ["encryption", "pkcs5", "pem"], optional = true }
 rustls = { workspace = true, default-features = false, features = ["std", "tls12"], optional = true }
 rustls-pemfile = { workspace = true, optional = true }
@@ -46,19 +40,27 @@ sha2 = { workspace = true, optional = true }
 widestring = { workspace = true }
 x509-parser = { workspace = true, optional = true }
 
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+rustpython-std = { workspace = true }
+
+[target.'cfg(not(target_abi = "polyasm"))'.dependencies]
+getrandom = { workspace = true, features = ["std"] }
+libc = { workspace = true }
+parking_lot = { workspace = true }
+
 [target.'cfg(unix)'.dependencies]
 nix = { workspace = true }
 
 [target.'cfg(any(unix, target_os = "macos", target_os = "redox", target_os = "wasi"))'.dependencies]
 rustix = { workspace = true }
 
-[target.'cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))'.dependencies]
+[target.'cfg(all(any(not(target_arch = "wasm32"), target_os = "wasi"), not(target_abi = "polyasm")))'.dependencies]
 num_cpus = { workspace = true }
 
-[target.'cfg(not(any(target_os = "ios", target_os = "android", target_os = "windows", target_arch = "wasm32", target_os = "redox")))'.dependencies]
+[target.'cfg(not(any(target_os = "ios", target_os = "android", target_os = "windows", target_arch = "wasm32", target_os = "redox", target_abi = "polyasm")))'.dependencies]
 mac_address = { workspace = true }
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(not(any(target_arch = "wasm32", target_abi = "polyasm")))'.dependencies]
 dns-lookup = { workspace = true }
 gethostname = { workspace = true }
 rustyline = { workspace = true }
@@ -70,6 +72,7 @@ which = { workspace = true }
 termios = { workspace = true }
 
 [target.'cfg(any(unix, windows))'.dependencies]
+bitflags = { workspace = true }
 memmap2 = { workspace = true }
 libloading = { workspace = true, optional = true }
 
@@ -80,8 +83,9 @@ libffi = { workspace = true, features = ["system"], optional = true }
 system-configuration = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-memchr.workspace = true
 junction = { workspace = true }
+memchr.workspace = true
+paste = { workspace = true }
 schannel = { workspace = true }
 windows-sys = { workspace = true, features = [
     "Win32_Devices_Bluetooth",

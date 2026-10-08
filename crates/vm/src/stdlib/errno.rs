@@ -25,7 +25,7 @@ mod errno_mod {
 
 pub use rustpython_host_env::errno::errors;
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
 macro_rules! e {
     ($name:ident) => {
         (stringify!($name), errors::$name as _)
@@ -36,7 +36,7 @@ macro_rules! e {
     };
 }
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
 const ERROR_CODES: &[(&str, i32)] = &[
     e!(ENODEV),
     e!(
@@ -748,5 +748,5 @@ const ERROR_CODES: &[(&str, i32)] = &[
     ),
 ];
 
-#[cfg(not(any(unix, windows, target_os = "wasi")))]
+#[cfg(not(any(unix, windows, target_os = "wasi", target_abi = "polyasm")))]
 const ERROR_CODES: &[(&str, i32)] = &[];
