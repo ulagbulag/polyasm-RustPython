@@ -15,10 +15,12 @@ workspace = true
 rustpython-unicode = { workspace = true }
 rustpython-wtf8 = { workspace = true }
 
-hexf-parse = { workspace = true }
 is-macro.workspace = true
 lexical-parse-float = { workspace = true, features = ["format"] }
 num-traits = { workspace = true }
 
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+rustpython-std = { workspace = true }
+
 [dev-dependencies]
-rand = { workspace = true }
+rand = { workspace = true, features = ["thread_rng"] }

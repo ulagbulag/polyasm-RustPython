@@ -3,7 +3,10 @@ use core::time::Duration;
 use std::io;
 use std::time::Instant;
 
-#[cfg(unix)]
+#[cfg(target_abi = "polyasm")]
+use crate::libc_polyasm as libc;
+
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub use libc::{
     EINTR, FD_SETSIZE, PIPE_BUF, POLLERR, POLLHUP, POLLIN, POLLNVAL, POLLOUT, POLLPRI, POLLRDBAND,
     POLLRDNORM, POLLWRBAND, POLLWRNORM,
@@ -85,8 +88,10 @@ pub mod platform {
     }
 }
 
-#[cfg(target_os = "wasi")]
+#[cfg(any(target_os = "wasi", target_abi = "polyasm"))]
 pub mod platform {
+    #[cfg(target_abi = "polyasm")]
+    use crate::libc_polyasm as libc;
     pub use libc::{FD_SETSIZE, timeval};
     use std::io;
     pub use std::os::fd::RawFd;
@@ -141,6 +146,7 @@ pub mod platform {
         unsafe { (*set).__nfds = 0 };
     }
 
+    #[cfg(target_os = "wasi")]
     unsafe extern "C" {
         pub fn select(
             nfds: libc::c_int,
@@ -149,6 +155,89 @@ pub mod platform {
             errorfds: *mut fd_set,
             timeout: *const timeval,
         ) -> libc::c_int;
+    }
+
+    /// `select(2)` over `poll(2)`: each descriptor of the sets becomes one poll entry.
+    ///
+    /// # Safety
+    ///
+    /// Each set pointer is valid, and `timeout` is null or valid.
+    #[cfg(target_abi = "polyasm")]
+    pub unsafe fn select(
+        nfds: libc::c_int,
+        readfds: *mut fd_set,
+        writefds: *mut fd_set,
+        errorfds: *mut fd_set,
+        timeout: *const timeval,
+    ) -> libc::c_int {
+        let wanted = |fd: RawFd| {
+            let mut events = 0;
+            // SAFETY: the caller hands valid sets.
+            unsafe {
+                if FD_ISSET(fd, readfds) {
+                    events |= libc::POLLIN;
+                }
+                if FD_ISSET(fd, writefds) {
+                    events |= libc::POLLOUT;
+                }
+                if FD_ISSET(fd, errorfds) {
+                    events |= libc::POLLPRI;
+                }
+            }
+            events
+        };
+        let mut fds: Vec<libc::pollfd> = (0..nfds)
+            .filter_map(|fd| {
+                let events = wanted(fd);
+                (events != 0).then_some(libc::pollfd::new(fd, events))
+            })
+            .collect();
+        // SAFETY: the caller hands null or a valid `timeval`.
+        let timeout = match unsafe { timeout.as_ref() } {
+            None => -1,
+            Some(tv) => {
+                use crate::time::{MS_TO_US, SEC_TO_MS};
+                let ms = tv
+                    .tv_sec
+                    .saturating_mul(SEC_TO_MS)
+                    .saturating_add(tv.tv_usec.saturating_add(MS_TO_US - 1) / MS_TO_US);
+                libc::c_int::try_from(ms).unwrap_or(libc::c_int::MAX)
+            }
+        };
+        // SAFETY: `fds` holds `fds.len()` entries.
+        let ready = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, timeout) };
+        if ready < 0 {
+            return ready;
+        }
+        // SAFETY: the caller hands valid sets.
+        unsafe {
+            FD_ZERO(readfds);
+            FD_ZERO(writefds);
+            FD_ZERO(errorfds);
+        }
+        let mut count = 0;
+        for pfd in &fds {
+            let revents = pfd.revents;
+            let readable = revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0;
+            let writable = revents & (libc::POLLOUT | libc::POLLERR) != 0;
+            let exceptional = revents & libc::POLLPRI != 0;
+            // SAFETY: the caller hands valid sets.
+            unsafe {
+                if readable && pfd.events & libc::POLLIN != 0 {
+                    FD_SET(pfd.fd, readfds);
+                    count += 1;
+                }
+                if writable && pfd.events & libc::POLLOUT != 0 {
+                    FD_SET(pfd.fd, writefds);
+                    count += 1;
+                }
+                if exceptional && pfd.events & libc::POLLPRI != 0 {
+                    FD_SET(pfd.fd, errorfds);
+                    count += 1;
+                }
+            }
+        }
+        count
     }
 
     pub fn last_select_error() -> io::Error {
@@ -160,6 +249,8 @@ pub use platform::{RawFd, timeval};
 
 #[cfg(unix)]
 pub type PollFd = platform::pollfd;
+#[cfg(target_abi = "polyasm")]
+pub type PollFd = std::host::PollFd;
 
 #[repr(transparent)]
 pub struct FdSet(MaybeUninit<platform::fd_set>);
@@ -278,7 +369,7 @@ pub fn wait_fd(
     kind: WaitKind,
     deadline: Option<Instant>,
 ) -> Result<WaitFd, WaitFdError> {
-    #[cfg(unix)]
+    #[cfg(any(unix, target_abi = "polyasm"))]
     {
         wait_fd_poll(fd, kind, deadline)
     }
@@ -286,13 +377,13 @@ pub fn wait_fd(
     {
         wait_fd_select(fd as RawFd, kind, deadline)
     }
-    #[cfg(not(any(unix, windows)))]
+    #[cfg(not(any(unix, windows, target_abi = "polyasm")))]
     {
         wait_fd_select(fd, kind, deadline)
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 fn wait_fd_poll(
     fd: RawFd,
     kind: WaitKind,
@@ -339,7 +430,7 @@ fn wait_fd_poll(
     }
 }
 
-#[cfg(not(unix))]
+#[cfg(not(any(unix, target_abi = "polyasm")))]
 fn wait_fd_select(
     fd: RawFd,
     kind: WaitKind,
@@ -380,7 +471,7 @@ fn wait_fd_select(
 }
 
 /// Convert a duration to a `poll(2)` millisecond timeout, rounding toward +∞.
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn duration_as_millis_ceiling(d: Duration) -> Option<i32> {
     let mut ms = d.as_millis();
     if Duration::from_millis(ms.min(u128::from(u64::MAX)) as u64) < d {
@@ -389,13 +480,13 @@ pub fn duration_as_millis_ceiling(d: Duration) -> Option<i32> {
     i32::try_from(ms).ok()
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 #[inline]
 pub fn search_poll_fd(fds: &[PollFd], fd: i32) -> Result<usize, usize> {
     fds.binary_search_by_key(&fd, |pfd| pfd.fd)
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn insert_poll_fd(fds: &mut Vec<PollFd>, fd: i32, events: i16) {
     match search_poll_fd(fds, fd) {
         Ok(i) => fds[i].events = events,
@@ -410,17 +501,17 @@ pub fn insert_poll_fd(fds: &mut Vec<PollFd>, fd: i32, events: i16) {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn get_poll_fd_mut(fds: &mut [PollFd], fd: i32) -> Option<&mut PollFd> {
     search_poll_fd(fds, fd).ok().map(move |i| &mut fds[i])
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn remove_poll_fd(fds: &mut Vec<PollFd>, fd: i32) -> Option<PollFd> {
     search_poll_fd(fds, fd).ok().map(|i| fds.remove(i))
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub fn poll_fds(fds: &mut [PollFd], timeout: i32) -> std::io::Result<i32> {
     let res = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as _, timeout) };
     if res < 0 {

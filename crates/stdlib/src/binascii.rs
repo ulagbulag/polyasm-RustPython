@@ -1,5 +1,6 @@
 // spell-checker:ignore hexlify unhexlify uuencodes rlecode rledecode
 
+#[cfg(not(target_abi = "polyasm"))]
 pub(super) use decl::crc32;
 pub(crate) use decl::module_def;
 

@@ -380,12 +380,12 @@ fn env_executable_override() -> Option<String> {
 
 /// Get the current executable path
 fn get_executable_path() -> Option<PathBuf> {
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(any(target_arch = "wasm32", target_abi = "polyasm")))]
     {
         let exec_arg = env::args_os().next()?;
         crate::host_env::fs::which(exec_arg)
     }
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", target_abi = "polyasm"))]
     {
         let exec_arg = env::args().next()?;
         Some(PathBuf::from(exec_arg))

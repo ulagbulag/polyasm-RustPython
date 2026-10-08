@@ -295,7 +295,10 @@ impl TryFromObject for SignalNum {
 /// Similar to `PyErr_SetInterruptEx` in CPython
 ///
 /// Missing signal handler for the given signal number is silently ignored.
-#[cfg(all(not(target_arch = "wasm32"), feature = "host_env"))]
+#[cfg(all(
+    not(any(target_arch = "wasm32", target_abi = "polyasm")),
+    feature = "host_env"
+))]
 pub fn set_interrupt_ex(signum: SignalNum) -> PyResult<()> {
     use crate::stdlib::_signal::_signal::{SIG_DFL, SIG_IGN, run_signal};
 

@@ -1,17 +1,85 @@
 // Python/fileutils.c in CPython
 #![allow(non_snake_case)]
 
+#[cfg(not(target_abi = "polyasm"))]
 use alloc::ffi::CString;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_abi = "polyasm")))]
 pub use rustix::fs::Stat as StatStruct;
 
+#[cfg(target_abi = "polyasm")]
+pub use polyasm::{StatStruct, fstat};
 #[cfg(windows)]
 pub use windows::{StatStruct, fstat};
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_abi = "polyasm")))]
 pub fn fstat(fd: crate::crt_fd::Borrowed<'_>) -> std::io::Result<StatStruct> {
     rustix::fs::fstat(fd).map_err(Into::into)
+}
+
+#[cfg(target_abi = "polyasm")]
+mod polyasm {
+    use std::{
+        fs::Metadata,
+        host::{Stat, host},
+        io,
+        os::polyasm::fs::MetadataExt,
+    };
+
+    use crate::crt_fd;
+
+    /// `struct stat` of the Linux generic ABI, filled from the status the host reports.
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct StatStruct {
+        pub st_dev: u64,
+        pub st_ino: u64,
+        pub st_nlink: u64,
+        pub st_mode: u32,
+        pub st_uid: u32,
+        pub st_gid: u32,
+        pub st_rdev: u64,
+        pub st_size: i64,
+        pub st_blksize: i64,
+        pub st_blocks: i64,
+        pub st_atime: i64,
+        pub st_atime_nsec: i64,
+        pub st_mtime: i64,
+        pub st_mtime_nsec: i64,
+        pub st_ctime: i64,
+        pub st_ctime_nsec: i64,
+    }
+
+    fn signed(value: u64) -> i64 {
+        i64::try_from(value).unwrap_or(i64::MAX)
+    }
+
+    impl From<Stat> for StatStruct {
+        fn from(stat: Stat) -> Self {
+            let metadata = Metadata::from(stat);
+            Self {
+                st_dev: metadata.dev(),
+                st_ino: metadata.ino(),
+                st_nlink: metadata.nlink(),
+                st_mode: metadata.mode(),
+                st_uid: metadata.uid(),
+                st_gid: metadata.gid(),
+                st_rdev: metadata.rdev(),
+                st_size: signed(metadata.size()),
+                st_blksize: signed(metadata.blksize()),
+                st_blocks: signed(metadata.blocks()),
+                st_atime: metadata.atime(),
+                st_atime_nsec: metadata.atime_nsec(),
+                st_mtime: metadata.mtime(),
+                st_mtime_nsec: metadata.mtime_nsec(),
+                st_ctime: metadata.ctime(),
+                st_ctime_nsec: metadata.ctime_nsec(),
+            }
+        }
+    }
+
+    pub fn fstat(fd: crt_fd::Borrowed<'_>) -> io::Result<StatStruct> {
+        host().fstat(fd.as_raw()).map(StatStruct::from)
+    }
 }
 
 #[cfg(windows)]
@@ -431,6 +499,7 @@ pub mod windows {
 }
 
 /// C `FILE *` handle as returned by [`fopen`] and consumed by [`fclose`].
+#[cfg(not(target_abi = "polyasm"))]
 pub type CFile = libc::FILE;
 
 /// Close a file opened with [`fopen`].
@@ -438,6 +507,7 @@ pub type CFile = libc::FILE;
 /// # Safety
 /// `fp` must be a non-null pointer returned by [`fopen`] and must not have been
 /// closed already.
+#[cfg(not(target_abi = "polyasm"))]
 pub unsafe fn fclose(fp: *mut CFile) -> core::ffi::c_int {
     unsafe { libc::fclose(fp) }
 }
@@ -445,6 +515,7 @@ pub unsafe fn fclose(fp: *mut CFile) -> core::ffi::c_int {
 // _Py_fopen_obj in cpython (Python/fileutils.c:1757-1835)
 // Open a file using std::fs::File and convert to FILE*
 // Automatically handles path encoding and EINTR retries
+#[cfg(not(target_abi = "polyasm"))]
 pub fn fopen(path: &std::path::Path, mode: &str) -> std::io::Result<*mut CFile> {
     use std::fs::File;
 

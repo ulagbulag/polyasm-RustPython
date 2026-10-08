@@ -11,7 +11,7 @@ use core::sync::atomic::Ordering::Relaxed;
 
 #[allow(non_camel_case_types)]
 pub type wchar_t = cfg_select! {
-    target_arch = "wasm32" => u32,
+    any(target_arch = "wasm32", target_abi = "polyasm") => u32,
     _ => libc::wchar_t,
 };
 

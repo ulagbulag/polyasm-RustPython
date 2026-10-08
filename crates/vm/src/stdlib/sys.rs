@@ -250,7 +250,8 @@ pub mod sys {
         target_os = "ios" => c"ios",
         windows => c"win32",
         target_os = "wasi" => c"wasi",
-        _ => c"unknown"
+        target_abi = "polyasm" => c"polyasm",
+        _ => c"unknown",
     };
 
     #[pyattr(name = "ps1")]
@@ -629,12 +630,12 @@ pub mod sys {
     fn byteorder(vm: &VirtualMachine) -> PyStrRef {
         // https://doc.rust-lang.org/reference/conditional-compilation.html#target_endian
         vm.ctx
-            .intern_str(if cfg!(target_endian = "little") {
-                "little"
-            } else if cfg!(target_endian = "big") {
-                "big"
-            } else {
-                "unknown"
+            .intern_str(cfg_select! {
+                any(target_endian = "little", target_abi = "polyasm") => {
+                    "little"
+                }
+                target_endian = "big" => "big",
+                _ => "unknown",
             })
             .to_owned()
     }

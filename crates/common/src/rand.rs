@@ -9,6 +9,9 @@
 #[must_use]
 pub fn os_random<const N: usize>() -> [u8; N] {
     let mut buf = [0u8; N];
-    getrandom::fill(&mut buf).unwrap();
+    cfg_select! {
+        target_abi = "polyasm" => std::host::host().fill_random(&mut buf).unwrap(),
+        _ => getrandom::fill(&mut buf).unwrap(),
+    }
     buf
 }

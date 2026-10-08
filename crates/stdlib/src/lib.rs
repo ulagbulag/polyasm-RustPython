@@ -1,7 +1,23 @@
 // to allow `mod foo {}` in foo.rs; clippy thinks this is a mistake/misunderstanding of
 // how `mod` works, but we want this sometimes for pymodule declarations
+#![cfg_attr(
+    target_abi = "polyasm",
+    no_std,
+    feature(prelude_import),
+    allow(internal_features)
+)]
 #![deny(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(clippy::module_inception)]
+
+#[cfg(target_abi = "polyasm")]
+extern crate rustpython_std as std;
+#[cfg(target_abi = "polyasm")]
+#[prelude_import]
+#[allow(
+    unused_imports,
+    reason = "names reach the crate through prelude resolution"
+)]
+use std::prelude::rust_2024::*;
 
 #[macro_use]
 extern crate rustpython_derive;
@@ -16,16 +32,21 @@ mod _remote_debugging;
 pub mod array;
 mod binascii;
 mod bisect;
+#[cfg(not(target_abi = "polyasm"))]
 mod bz2;
 mod cjkcodecs;
 mod cmath;
+#[cfg(not(target_abi = "polyasm"))]
 mod compression; // internal module
 mod contextvars;
 mod csv;
+#[cfg(not(target_abi = "polyasm"))]
 mod elementtree;
 
+#[cfg(not(target_abi = "polyasm"))]
 mod lzma;
 
+#[cfg(not(target_abi = "polyasm"))]
 mod zlib;
 
 mod blake2;
@@ -40,7 +61,7 @@ mod json;
 
 #[cfg(all(
     feature = "host_env",
-    not(any(target_os = "ios", target_arch = "wasm32"))
+    not(any(target_os = "ios", target_arch = "wasm32", target_abi = "polyasm"))
 ))]
 mod locale;
 
@@ -59,6 +80,7 @@ mod _heapq;
 mod _queue;
 mod _zoneinfo;
 mod pickle;
+#[cfg(not(target_abi = "polyasm"))]
 mod pyexpat;
 mod pystruct;
 mod random;
@@ -69,7 +91,11 @@ mod suggestions;
 // mod re;
 #[cfg(all(
     feature = "host_env",
-    not(any(all(target_arch = "wasm32", target_os = "unknown"), target_os = "wasi"))
+    not(any(
+        all(target_arch = "wasm32", target_os = "unknown"),
+        target_os = "wasi",
+        target_abi = "polyasm"
+    ))
 ))]
 pub mod socket;
 
@@ -77,18 +103,29 @@ pub mod socket;
 #[path = "socket_wasm.rs"]
 pub mod socket;
 
+cfg_select! {
+    all(feature = "host_env", target_abi = "polyasm") => {
+        pub mod socket_polyasm;
+        pub use socket_polyasm as socket;
+    }
+    _ => {}
+}
+
 #[cfg(all(feature = "host_env", unix, not(target_os = "redox")))]
 mod syslog;
 
 mod unicodedata;
 
-#[cfg(feature = "host_env")]
+#[cfg(all(feature = "host_env", not(target_abi = "polyasm")))]
 mod faulthandler;
 
 #[cfg(all(feature = "host_env", any(unix, target_os = "wasi")))]
 mod fcntl;
 
-#[cfg(all(feature = "host_env", not(target_arch = "wasm32")))]
+#[cfg(all(
+    feature = "host_env",
+    not(any(target_arch = "wasm32", target_abi = "polyasm"))
+))]
 mod multiprocessing;
 
 #[cfg(all(
@@ -128,7 +165,10 @@ mod resource;
 #[cfg(all(feature = "host_env", target_os = "macos"))]
 mod scproxy;
 
-#[cfg(all(feature = "host_env", any(unix, windows, target_os = "wasi")))]
+#[cfg(all(
+    feature = "host_env",
+    any(unix, windows, target_os = "wasi", target_abi = "polyasm")
+))]
 mod select;
 
 #[cfg(all(
@@ -177,6 +217,7 @@ mod termios;
         target_os = "windows",
         target_arch = "wasm32",
         target_os = "redox",
+        target_abi = "polyasm",
     ))
 ))]
 mod uuid;
@@ -205,12 +246,14 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
         binascii::module_def(ctx),
         bisect::module_def(ctx),
         blake2::module_def(ctx),
+        #[cfg(not(target_abi = "polyasm"))]
         bz2::module_def(ctx),
         cmath::module_def(ctx),
         contextvars::module_def(ctx),
         csv::module_def(ctx),
+        #[cfg(not(target_abi = "polyasm"))]
         elementtree::module_def(ctx),
-        #[cfg(feature = "host_env")]
+        #[cfg(all(feature = "host_env", not(target_abi = "polyasm")))]
         faulthandler::module_def(ctx),
         #[cfg(all(feature = "host_env", any(unix, target_os = "wasi")))]
         fcntl::module_def(ctx),
@@ -224,15 +267,19 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
         json::module_def(ctx),
         #[cfg(all(
             feature = "host_env",
-            not(any(target_os = "ios", target_arch = "wasm32"))
+            not(any(target_os = "ios", target_arch = "wasm32", target_abi = "polyasm"))
         ))]
         locale::module_def(ctx),
+        #[cfg(not(target_abi = "polyasm"))]
         lzma::module_def(ctx),
         math::module_def(ctx),
         md5::module_def(ctx),
         #[cfg(all(feature = "host_env", any(unix, windows)))]
         mmap::module_def(ctx),
-        #[cfg(all(feature = "host_env", not(target_arch = "wasm32")))]
+        #[cfg(all(
+            feature = "host_env",
+            not(any(target_arch = "wasm32", target_abi = "polyasm"))
+        ))]
         multiprocessing::module_def(ctx),
         #[cfg(all(
             feature = "host_env",
@@ -254,6 +301,7 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
         ))]
         posixshmem::module_def(ctx),
         pickle::module_def(ctx),
+        #[cfg(not(target_abi = "polyasm"))]
         pyexpat::module_def(ctx),
         pystruct::module_def(ctx),
         _datetime::module_def(ctx),
@@ -265,7 +313,10 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
         resource::module_def(ctx),
         #[cfg(all(feature = "host_env", target_os = "macos"))]
         scproxy::module_def(ctx),
-        #[cfg(all(feature = "host_env", any(unix, windows, target_os = "wasi")))]
+        #[cfg(all(
+            feature = "host_env",
+            any(unix, windows, target_os = "wasi", target_abi = "polyasm")
+        ))]
         select::module_def(ctx),
         sha1::module_def(ctx),
         sha256::module_def(ctx),
@@ -273,10 +324,16 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
         sha512::module_def(ctx),
         #[cfg(all(
             feature = "host_env",
-            not(any(all(target_arch = "wasm32", target_os = "unknown"), target_os = "wasi"))
+            not(any(
+                all(target_arch = "wasm32", target_os = "unknown"),
+                target_os = "wasi",
+                target_abi = "polyasm"
+            ))
         ))]
         socket::module_def(ctx),
         #[cfg(any(all(target_arch = "wasm32", target_os = "unknown"), target_os = "wasi"))]
+        socket::module_def(ctx),
+        #[cfg(all(feature = "host_env", target_abi = "polyasm"))]
         socket::module_def(ctx),
         #[cfg(all(
             feature = "sqlite",
@@ -314,10 +371,12 @@ pub fn stdlib_module_defs(ctx: &Context) -> Vec<&'static builtins::PyModuleDef> 
                 target_os = "ios",
                 target_os = "windows",
                 target_arch = "wasm32",
-                target_os = "redox"
+                target_os = "redox",
+                target_abi = "polyasm"
             ))
         ))]
         uuid::module_def(ctx),
+        #[cfg(not(target_abi = "polyasm"))]
         zlib::module_def(ctx),
     ]
 }

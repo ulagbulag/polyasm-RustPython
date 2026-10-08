@@ -14,6 +14,8 @@ mod _csv {
     use alloc::fmt;
     use itertools::Itertools;
     use parking_lot::Mutex;
+    #[cfg(target_abi = "polyasm")]
+    use rustpython_common::lock::parking_lot;
     use rustpython_common::{lock::LazyLock, wtf8::Wtf8Buf};
     use rustpython_vm::match_class;
     use std::collections::HashMap;

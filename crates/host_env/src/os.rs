@@ -4,6 +4,8 @@
 use crate::crt_fd;
 #[cfg(windows)]
 use crate::fs;
+#[cfg(target_abi = "polyasm")]
+use crate::libc_polyasm as libc;
 #[cfg(windows)]
 pub use crate::posix::rename;
 #[cfg(any(unix, target_os = "wasi"))]
@@ -75,10 +77,10 @@ pub use libc::{ST_NOSUID, ST_RDONLY};
 
 /// `open(2)` flags. libc on hosts that bind them; Darwin/BSD numbers on
 /// `wasm32-unknown-unknown`, matching the guest errno table.
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
 pub use libc::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY};
 
-#[cfg(unix)]
+#[cfg(any(unix, target_abi = "polyasm"))]
 pub use libc::{O_ACCMODE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, O_NONBLOCK};
 
 #[cfg(any(
@@ -423,14 +425,14 @@ pub fn process_id() -> u32 {
     std::process::id()
 }
 
-#[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
 pub fn cpu_count() -> usize {
-    num_cpus::get()
-}
-
-#[cfg(not(any(not(target_arch = "wasm32"), target_os = "wasi")))]
-pub fn cpu_count() -> usize {
-    1
+    cfg_select! {
+        any(
+            target_abi = "polyasm",
+            all(target_arch = "wasm32", not(target_os = "wasi"))
+        ) => 1,
+        _ => num_cpus::get(),
+    }
 }
 
 #[cfg(unix)]
@@ -442,6 +444,11 @@ pub fn page_size() -> usize {
 pub const fn page_size() -> usize {
     // WebAssembly's page size is a constant defined by the spec.
     1024 * 64
+}
+
+#[cfg(target_abi = "polyasm")]
+pub const fn page_size() -> usize {
+    crate::consts::PAGE_SIZE
 }
 
 #[cfg(windows)]
@@ -460,7 +467,7 @@ pub fn alloc_granularity() -> usize {
     page_size()
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", target_abi = "polyasm"))]
 pub const fn alloc_granularity() -> usize {
     // Like Unix, WebAssembly doesn't separate page size and alloc granularity.
     page_size()
@@ -479,6 +486,7 @@ pub fn device_encoding(_fd: i32) -> Option<String> {
     #[cfg(any(
         target_os = "android",
         target_os = "redox",
+        target_abi = "polyasm",
         all(target_arch = "wasm32", not(target_os = "wasi"))
     ))]
     {
@@ -500,6 +508,7 @@ pub fn device_encoding(_fd: i32) -> Option<String> {
     #[cfg(not(any(
         target_os = "android",
         target_os = "redox",
+        target_abi = "polyasm",
         windows,
         all(target_arch = "wasm32", not(target_os = "wasi"))
     )))]
@@ -524,6 +533,7 @@ pub fn exit(code: i32) -> ! {
 }
 
 /// Wrapper around the C `abort()` call: terminates the process abnormally.
+#[cfg(not(target_abi = "polyasm"))]
 pub fn abort() -> ! {
     unsafe extern "C" {
         fn abort() -> !;
@@ -531,19 +541,28 @@ pub fn abort() -> ! {
     unsafe { abort() }
 }
 
+/// Terminates the guest at once with a trap.
+#[cfg(target_abi = "polyasm")]
+pub fn abort() -> ! {
+    std::process::abort()
+}
+
 /// Read `size` cryptographically random bytes from the OS.
 pub fn urandom(size: usize) -> io::Result<Vec<u8>> {
     let mut buf = vec![0u8; size];
-    getrandom::fill(&mut buf).map_err(io::Error::from)?;
+    cfg_select! {
+        target_abi = "polyasm" => std::host::host().fill_random(&mut buf)?,
+        _ => getrandom::fill(&mut buf).map_err(io::Error::from)?,
+    }
     Ok(buf)
 }
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
 pub fn isatty(fd: i32) -> bool {
     unsafe { suppress_iph!(libc::isatty(fd)) != 0 }
 }
 
-#[cfg(not(any(unix, windows, target_os = "wasi")))]
+#[cfg(not(any(unix, windows, target_os = "wasi", target_abi = "polyasm")))]
 pub fn isatty(_fd: i32) -> bool {
     false
 }
@@ -592,7 +611,7 @@ pub fn seek_fd(
     Ok(new_position)
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi", target_abi = "polyasm"))]
 pub fn seek_fd(
     fd: crt_fd::Borrowed<'_>,
     position: crt_fd::Offset,
@@ -690,7 +709,7 @@ pub fn io_error_from_errno(errno: i32) -> io::Error {
     io::Error::new(kind, CrtErrno(errno))
 }
 
-#[cfg(all(not(windows), not(target_arch = "wasm32")))]
+#[cfg(all(not(windows), not(target_arch = "wasm32"), not(target_abi = "polyasm")))]
 impl ErrorExt for rustix::io::Errno {
     fn posix_errno(&self) -> i32 {
         self.raw_os_error()
@@ -798,23 +817,39 @@ pub fn set_errno(value: i32) {
     }
 }
 
-#[cfg(not(any(unix, windows, target_os = "wasi")))]
+#[cfg(target_abi = "polyasm")]
+pub fn set_errno(value: i32) {
+    std::os::polyasm::errno::set(value);
+}
+
+#[cfg(not(any(unix, windows, target_os = "wasi", target_abi = "polyasm")))]
 pub fn set_errno(_value: i32) {}
 
-// WASIp1, like Unix, provides byte-preserving OsStr conversions.
-#[cfg(any(unix, all(target_os = "wasi", not(target_env = "p2"))))]
+// WASIp1 and PolyASM, like Unix, provide byte-preserving OsStr conversions.
+#[cfg(any(
+    unix,
+    target_abi = "polyasm",
+    all(target_os = "wasi", not(target_env = "p2"))
+))]
 pub fn bytes_as_os_str(b: &[u8]) -> Result<&std::ffi::OsStr, Utf8Error> {
     use self::ffi::OsStrExt;
     Ok(std::ffi::OsStr::from_bytes(b))
 }
 
-#[cfg(not(any(unix, all(target_os = "wasi", not(target_env = "p2")))))]
+#[cfg(not(any(
+    unix,
+    target_abi = "polyasm",
+    all(target_os = "wasi", not(target_env = "p2"))
+)))]
 pub fn bytes_as_os_str(b: &[u8]) -> Result<&std::ffi::OsStr, Utf8Error> {
     Ok(core::str::from_utf8(b)?.as_ref())
 }
 
 #[cfg(unix)]
 pub use std::os::unix::ffi;
+
+#[cfg(target_abi = "polyasm")]
+pub use std::os::polyasm::ffi;
 
 // WASIp1 uses stable std::os::wasi::ffi
 #[cfg(all(target_os = "wasi", not(target_env = "p2")))]

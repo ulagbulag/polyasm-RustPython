@@ -841,8 +841,8 @@ mod _sre {
                 if mark_index + 1 < marks.raw().len() {
                     let start = marks.raw()[mark_index];
                     let end = marks.raw()[mark_index + 1];
-                    if start.is_some() && end.is_some() {
-                        regs.push((start.unpack() as isize, end.unpack() as isize));
+                    if let (Some(start), Some(end)) = (start, end) {
+                        regs.push((start as isize, end as isize));
                         continue;
                     }
                 }

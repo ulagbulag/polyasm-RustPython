@@ -14,7 +14,9 @@ mod _random {
     use malachite_bigint::{BigInt, BigUint, Sign};
     use mt19937::MT19937;
     use num_traits::{Signed, Zero};
-    use rand::{Rng, SeedableRng};
+    use rand::Rng;
+    #[cfg(not(target_abi = "polyasm"))]
+    use rand::SeedableRng;
     use rustpython_vm::types::DefaultConstructor;
 
     #[pyattr]
@@ -64,7 +66,22 @@ mod _random {
                     let key = if key.is_empty() { &[0] } else { key.as_slice() };
                     MT19937::new_with_slice_seed(key)
                 }
-                None => MT19937::from_rng(&mut rand::rng()),
+                None => cfg_select! {
+                    target_abi = "polyasm" => {
+                        {
+                            // CPython seeds from `mt19937::N` words of OS entropy.
+                            let bytes = rustpython_common::rand::os_random::<{ mt19937::N * 4 }>();
+                            let key: Vec<u32> = bytes
+                                .chunks_exact(4)
+                                .map(|word| {
+                                    u32::from_le_bytes([word[0], word[1], word[2], word[3]])
+                                })
+                                .collect();
+                            MT19937::new_with_slice_seed(&key)
+                        }
+                    }
+                    _ => MT19937::from_rng(&mut rand::rng()),
+                },
             };
             Ok(())
         }

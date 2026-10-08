@@ -233,7 +233,12 @@ pub(super) mod _os {
     #[cfg(windows)]
     use rustpython_host_env::{nt as host_nt, windows::ToWideString};
 
-    #[cfg(all(any(unix, target_os = "wasi"), not(target_os = "redox")))]
+    #[cfg(target_abi = "polyasm")]
+    use rustpython_host_env::libc;
+    #[cfg(all(
+        any(unix, target_os = "wasi", target_abi = "polyasm"),
+        not(target_os = "redox")
+    ))]
     use rustpython_host_env::posix as host_posix;
     use std::{fs, io, path::PathBuf, time::SystemTime};
 
@@ -279,7 +284,7 @@ pub(super) mod _os {
         }
     }
 
-    #[cfg(any(unix, windows, target_os = "wasi"))]
+    #[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
     #[derive(FromArgs)]
     struct OpenArgs<'fd> {
         path: OsPath,
@@ -295,7 +300,7 @@ pub(super) mod _os {
         os_open(args.path, args.flags, args.mode, args.dir_fd, vm)
     }
 
-    #[cfg(any(unix, windows, target_os = "wasi"))]
+    #[cfg(any(unix, windows, target_os = "wasi", target_abi = "polyasm"))]
     pub(crate) fn os_open(
         name: OsPath,
         flags: i32,
@@ -1355,7 +1360,7 @@ pub(super) mod _os {
     impl StatResultData {
         fn from_stat(stat: &StatStruct, vm: &VirtualMachine) -> Self {
             let (atime, mtime, ctime);
-            #[cfg(all(any(unix, windows), not(target_os = "wasi")))]
+            #[cfg(all(any(unix, windows, target_abi = "polyasm"), not(target_os = "wasi")))]
             {
                 atime = (stat.st_atime, stat.st_atime_nsec);
                 mtime = (stat.st_mtime, stat.st_mtime_nsec);
@@ -1903,7 +1908,7 @@ pub(super) mod _os {
         _follow_symlinks: FollowSymlinks,
         vm: &VirtualMachine,
     ) -> PyResult<()> {
-        #[cfg(any(target_os = "wasi", unix))]
+        #[cfg(any(target_os = "wasi", unix, target_abi = "polyasm"))]
         {
             #[cfg(not(target_os = "redox"))]
             {

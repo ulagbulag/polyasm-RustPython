@@ -9,7 +9,7 @@ use crate::{
 use core::ops::{Deref, DerefMut, RangeInclusive};
 use indexmap::IndexMap;
 use itertools::Itertools;
-use std::hash::DefaultHasher;
+use std::collections::hash_map::DefaultHasher;
 
 pub trait IntoFuncArgs: Sized {
     fn into_args(self, vm: &VirtualMachine) -> FuncArgs;

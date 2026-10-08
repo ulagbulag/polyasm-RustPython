@@ -43,9 +43,7 @@ base64 = { workspace = true, optional = true }
 bitflags = { workspace = true }
 blake2b_simd = { workspace = true, optional = true }
 blake2s_simd = { workspace = true, optional = true }
-bzip2 = { workspace = true, optional = true }
 crc32fast = { workspace = true, optional = true }
-getrandom = { workspace = true }
 itertools = { workspace = true }
 libc = { workspace = true }
 libz-rs-sys = { workspace = true, optional = true }
@@ -55,7 +53,6 @@ malachite-base = { workspace = true }
 md-5 = { workspace = true, optional = true }
 memchr = { workspace = true, optional = true }
 num-traits = { workspace = true }
-parking_lot = { workspace = true, optional = true }
 radium = { workspace = true }
 scrypt = { workspace = true, optional = true }
 sha1 = { workspace = true, optional = true }
@@ -66,8 +63,20 @@ zlib-rs = { workspace = true, optional = true }
 lock_api = { workspace = true }
 siphasher = { workspace = true }
 num-complex = { workspace = true }
+
+[target.'cfg(not(target_abi = "polyasm"))'.dependencies]
+bzip2 = { workspace = true, optional = true }
+getrandom = { workspace = true, features = ["std"] }
+num-complex = { workspace = true, features = ["std"] }
+num-traits = { workspace = true, features = ["std"] }
+parking_lot = { workspace = true, optional = true }
 xz = { workspace = true, optional = true }
 xz-sys = { workspace = true, optional = true }
+
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+num-complex = { workspace = true, features = ["libm"] }
+num-traits = { workspace = true, features = ["libm"] }
+rustpython-std = { workspace = true }
 
 [lints]
 workspace = true

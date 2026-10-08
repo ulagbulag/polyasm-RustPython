@@ -6,9 +6,11 @@ pub(crate) use _signal::module_def;
 pub(crate) mod _signal {
     #![allow(unreachable_pub)]
 
+    #[cfg(any(unix, windows))]
+    use crate::signal;
     use crate::{
         Py, PyObjectRef, PyResult, VirtualMachine,
-        signal::{self, SignalHandlers, SignalNum},
+        signal::{SignalHandlers, SignalNum},
     };
     use core::sync::atomic::{self, Ordering};
 
@@ -104,6 +106,13 @@ pub(crate) mod _signal {
     #[cfg(any(unix, windows))]
     #[pyattr]
     pub use host_signal::{SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM};
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyattr]
+    pub use rustpython_host_env::libc::{
+        SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
+        SIGQUIT, SIGSEGV, SIGTERM, SIGTRAP, SIGUSR1, SIGUSR2,
+    };
 
     #[cfg(windows)]
     #[pyattr]

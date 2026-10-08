@@ -110,10 +110,13 @@ pub struct VirtualMachine {
     /// Depth of native recursion that pushes no Python frame, counted only
     /// where the stack pointer cannot be read. Everywhere else the native
     /// stack itself answers, and nothing needs counting.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
     native_recursion_depth: Cell<usize>,
     /// C stack soft limit for detecting stack overflow (like c_stack_soft_limit)
-    #[cfg_attr(any(miri, target_env = "musl"), allow(dead_code))]
+    #[cfg_attr(
+        any(miri, target_env = "musl", target_abi = "polyasm"),
+        allow(dead_code)
+    )]
     c_stack_soft_limit: Cell<usize>,
     /// Async generator firstiter hook (per-thread, set via sys.set_asyncgen_hooks)
     pub async_gen_firstiter: RefCell<Option<PyObjectRef>>,
@@ -1272,7 +1275,7 @@ impl VirtualMachine {
             state,
             initialized: false,
             recursion_depth: Cell::new(0),
-            #[cfg(any(miri, target_env = "musl"))]
+            #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
             native_recursion_depth: Cell::new(0),
             c_stack_soft_limit: Cell::new(Self::calculate_c_stack_soft_limit()),
             async_gen_firstiter: RefCell::new(None),
@@ -2473,7 +2476,10 @@ impl VirtualMachine {
     /// Stack margin bytes (like _PyOS_STACK_MARGIN_BYTES).
     /// The margin is doubled for debug/sanitized builds because frame
     /// evaluation consumes more native stack in those configurations.
-    #[cfg_attr(any(miri, target_env = "musl"), allow(dead_code))]
+    #[cfg_attr(
+        any(miri, target_env = "musl", target_abi = "polyasm"),
+        allow(dead_code)
+    )]
     // 2× CPython's _PY_STACK_MARGIN_BYTES to account for both heavy and
     // light frame native stack usage per recursion step.
     pub(crate) const STACK_MARGIN_BYTES: usize =
@@ -2483,20 +2489,30 @@ impl VirtualMachine {
     /// (`Py_C_RECURSION_LIMIT`). A native step costs far more stack than a
     /// Python one and debug builds cost more again, so this sits well under
     /// what a default stack holds rather than at what it would just fit.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
     const NATIVE_RECURSION_LIMIT_UNMEASURED: usize =
         if cfg!(debug_assertions) { 500 } else { 1500 };
 
     /// Get the stack boundaries using platform-specific APIs.
     /// Returns (base, top) where base is the lowest address and top is the highest.
-    #[cfg(all(not(miri), not(target_env = "musl"), windows))]
+    #[cfg(all(
+        not(miri),
+        not(target_env = "musl"),
+        not(target_abi = "polyasm"),
+        windows
+    ))]
     fn get_stack_bounds() -> (usize, usize) {
         crate::host_env::windows::current_thread_stack_bounds()
     }
 
     /// Get stack boundaries on non-Windows platforms.
     /// Falls back to estimating based on current stack pointer.
-    #[cfg(all(not(miri), not(target_env = "musl"), not(windows)))]
+    #[cfg(all(
+        not(miri),
+        not(target_env = "musl"),
+        not(target_abi = "polyasm"),
+        not(windows)
+    ))]
     fn get_stack_bounds() -> (usize, usize) {
         // Use pthread_attr_getstack on platforms that support it
         #[cfg(any(target_os = "linux", target_os = "android"))]
@@ -2550,7 +2566,7 @@ impl VirtualMachine {
     /// The margin is clamped to half the stack so threads created with a stack
     /// smaller than 2 * (2 * margin) still get usable headroom instead of a
     /// soft limit above their stack top (which would trip on entry).
-    #[cfg(all(not(miri), not(target_env = "musl")))]
+    #[cfg(all(not(miri), not(target_env = "musl"), not(target_abi = "polyasm")))]
     fn calculate_c_stack_soft_limit() -> usize {
         let (base, top) = Self::get_stack_bounds();
         let stack_size = top.saturating_sub(base);
@@ -2561,7 +2577,7 @@ impl VirtualMachine {
     /// Musl currently reports stack bounds in a way that trips the VM's
     /// native stack guard during frozen stdlib bootstrap, so keep the Python
     /// recursion limit as the only guard there.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
     fn calculate_c_stack_soft_limit() -> usize {
         0
     }
@@ -2569,7 +2585,7 @@ impl VirtualMachine {
     /// Check if we're near the C stack limit (like _Py_MakeRecCheck).
     /// One-sided: any stack pointer below the soft limit is in danger, since a
     /// single native frame can exceed the margin and step past it.
-    #[cfg(all(not(miri), not(target_env = "musl")))]
+    #[cfg(all(not(miri), not(target_env = "musl"), not(target_abi = "polyasm")))]
     #[inline(always)]
     pub(crate) fn check_c_stack_overflow(&self) -> bool {
         let current_sp = psm::stack_pointer() as usize;
@@ -2579,7 +2595,7 @@ impl VirtualMachine {
 
     /// Miri does not support the native stack probe, and musl currently trips
     /// the probe during stdlib bootstrap.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
     #[inline(always)]
     pub(crate) fn check_c_stack_overflow(&self) -> bool {
         false
@@ -2596,10 +2612,10 @@ impl VirtualMachine {
         // `check_c_stack_overflow()` answers no unconditionally where the stack
         // pointer cannot be read, which would leave this guard with nothing to
         // stop. A count of the nesting stands in for the measurement there.
-        #[cfg(any(miri, target_env = "musl"))]
+        #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
         let counted_too_deep =
             self.native_recursion_depth.get() >= Self::NATIVE_RECURSION_LIMIT_UNMEASURED;
-        #[cfg(not(any(miri, target_env = "musl")))]
+        #[cfg(not(any(miri, target_env = "musl", target_abi = "polyasm")))]
         let counted_too_deep = false;
 
         if counted_too_deep || self.check_c_stack_overflow() {
@@ -2608,7 +2624,7 @@ impl VirtualMachine {
             );
         }
 
-        #[cfg(any(miri, target_env = "musl"))]
+        #[cfg(any(miri, target_env = "musl", target_abi = "polyasm"))]
         let _native_depth_guard = {
             self.native_recursion_depth.update(|d| d + 1);
             scopeguard::guard((), |()| {

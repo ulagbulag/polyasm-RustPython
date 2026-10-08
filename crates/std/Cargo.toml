@@ -1,0 +1,16 @@
+[package]
+name = "rustpython-std"
+description = "The std surface RustPython runs on in PolyASM guests, with operating-system services from an embedder host"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+hashbrown = { version = "0.17", default-features = false, features = ["rustc-internal-api"] }
+libm = "0.2.16"

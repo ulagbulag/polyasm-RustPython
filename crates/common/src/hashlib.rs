@@ -7,7 +7,14 @@
 //! own object and exception adapters.
 
 use md5::Md5;
-use parking_lot::Mutex;
+cfg_select! {
+    target_abi = "polyasm" => {
+        use crate::lock::PyMutex as Mutex;
+    }
+    _ => {
+        use parking_lot::Mutex;
+    }
+}
 use sha1::Sha1;
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
