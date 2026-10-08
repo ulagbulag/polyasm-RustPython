@@ -6,6 +6,9 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 #[cfg(target_env = "msvc")]
 use alloc::string::String;
 
+#[cfg(target_abi = "polyasm")]
+use crate::libc_polyasm as libc;
+
 pub const SEC_TO_MS: i64 = 1000;
 pub const MS_TO_US: i64 = 1000;
 pub const SEC_TO_US: i64 = SEC_TO_MS * MS_TO_US;
@@ -20,8 +23,14 @@ pub const NS_TO_US: i64 = 1000;
 ///
 /// Not available under MSVC (which exposes these only via the
 /// `_get_tzname`-style helpers) or on `wasm32` (no libc tz state).
+///
+/// On PolyASM targets the guest takes the host clock, which runs in UTC.
 #[cfg(all(not(target_env = "msvc"), not(target_arch = "wasm32")))]
 pub mod tz {
+    #[cfg(target_abi = "polyasm")]
+    use crate::consts::TIME_ZONE_NAME;
+
+    #[cfg(not(target_abi = "polyasm"))]
     unsafe extern "C" {
         #[cfg(not(target_os = "freebsd"))]
         #[link_name = "daylight"]
@@ -39,12 +48,18 @@ pub mod tz {
     }
 
     pub fn tzset() {
-        unsafe { c_tzset() }
+        cfg_select! {
+            target_abi = "polyasm" => {}
+            _ => unsafe { c_tzset() },
+        }
     }
 
     #[must_use]
     pub fn timezone() -> core::ffi::c_long {
-        unsafe { c_timezone }
+        cfg_select! {
+            target_abi = "polyasm" => 0,
+            _ => unsafe { c_timezone },
+        }
     }
 
     /// DST offset west of UTC in seconds, matching CPython's `time.altzone`.
@@ -53,20 +68,20 @@ pub mod tz {
     /// `timezone - 3600` (same as CPython without `HAVE_ALTZONE`).
     #[must_use]
     pub fn altzone() -> core::ffi::c_long {
-        #[cfg(has_altzone)]
-        {
-            unsafe { c_altzone }
-        }
-        #[cfg(not(has_altzone))]
-        {
-            timezone() - 3600
+        cfg_select! {
+            target_abi = "polyasm" => 0,
+            has_altzone => unsafe { c_altzone },
+            _ => timezone() - 3600,
         }
     }
 
     #[cfg(not(target_os = "freebsd"))]
     #[must_use]
     pub fn daylight() -> core::ffi::c_int {
-        unsafe { c_daylight }
+        cfg_select! {
+            target_abi = "polyasm" => 0,
+            _ => unsafe { c_daylight },
+        }
     }
 
     /// Snapshot of `tzname[0]` / `tzname[1]` as owned `String`s.
@@ -74,12 +89,17 @@ pub mod tz {
     /// have to handle the raw pointers themselves.
     #[must_use]
     pub fn tzname_strings() -> (String, String) {
-        unsafe fn to_str(s: *const core::ffi::c_char) -> String {
-            unsafe { core::ffi::CStr::from_ptr(s) }
-                .to_string_lossy()
-                .into_owned()
+        cfg_select! {
+            target_abi = "polyasm" => (TIME_ZONE_NAME.to_owned(), TIME_ZONE_NAME.to_owned()),
+            _ => {
+                unsafe fn to_str(s: *const core::ffi::c_char) -> String {
+                    unsafe { core::ffi::CStr::from_ptr(s) }
+                        .to_string_lossy()
+                        .into_owned()
+                }
+                unsafe { (to_str(c_tzname[0]), to_str(c_tzname[1])) }
+            }
         }
-        unsafe { (to_str(c_tzname[0]), to_str(c_tzname[1])) }
     }
 }
 
@@ -165,11 +185,15 @@ pub fn mktime(tm: &mut libc::tm) -> TimeT {
     unsafe { crate::suppress_iph!(c_mktime(tm)) }
 }
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
 pub fn strerror(errno: i32) -> String {
-    unsafe { core::ffi::CStr::from_ptr(libc::strerror(errno)) }
-        .to_string_lossy()
-        .into_owned()
+    cfg_select! {
+        target_abi = "polyasm" => std::os::polyasm::errno::strerror(errno)
+            .map_or_else(|| format!("Unknown error {errno}"), str::to_owned),
+        _ => unsafe { core::ffi::CStr::from_ptr(libc::strerror(errno)) }
+            .to_string_lossy()
+            .into_owned(),
+    }
 }
 
 #[cfg(unix)]
@@ -199,7 +223,13 @@ pub fn waitstatus_to_exitcode(status: libc::c_int) -> Option<i32> {
     None
 }
 
-#[cfg(any(unix, all(target_arch = "wasm32", target_os = "emscripten")))]
+#[cfg(any(
+    all(
+        all(not(target_abi = "polyasm"), target_arch = "wasm32"),
+        target_os = "emscripten"
+    ),
+    unix
+))]
 pub fn process_times() -> std::io::Result<ProcessTimes> {
     let mut t = libc::tms {
         tms_utime: 0,
@@ -227,13 +257,13 @@ pub fn process_times() -> std::io::Result<ProcessTimes> {
     })
 }
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
 #[derive(Copy, Clone, Debug)]
 // WASI libc represents clockid_t as an opaque pointer type without Eq or PartialEq.
-#[cfg_attr(unix, derive(Eq, PartialEq))]
+#[cfg_attr(any(target_abi = "polyasm", unix), derive(Eq, PartialEq))]
 pub struct ClockId(libc::clockid_t);
 
-#[cfg(any(unix, target_os = "wasi"))]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
 impl ClockId {
     pub const fn from_raw(raw: libc::clockid_t) -> Self {
         Self(raw)
@@ -269,15 +299,14 @@ impl ClockId {
     pub const CLOCK_UPTIME_RAW: Self = Self(libc::CLOCK_UPTIME_RAW);
 }
 
-#[cfg(unix)]
-pub use libc::{CLOCK_MONOTONIC, CLOCK_REALTIME};
-
+#[cfg(target_abi = "polyasm")]
+pub use crate::consts::{
+    CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID, CLOCK_REALTIME, CLOCK_THREAD_CPUTIME_ID,
+};
 #[cfg(target_os = "solaris")]
 pub use libc::CLOCK_HIGHRES;
-
 #[cfg(any(target_os = "linux", target_vendor = "apple"))]
 pub use libc::CLOCK_MONOTONIC_RAW;
-
 #[cfg(all(
     unix,
     not(any(
@@ -288,7 +317,6 @@ pub use libc::CLOCK_MONOTONIC_RAW;
     ))
 ))]
 pub use libc::CLOCK_PROCESS_CPUTIME_ID;
-
 #[cfg(all(
     unix,
     not(any(
@@ -300,13 +328,12 @@ pub use libc::CLOCK_PROCESS_CPUTIME_ID;
     ))
 ))]
 pub use libc::CLOCK_THREAD_CPUTIME_ID;
-
 #[cfg(target_os = "linux")]
 pub use libc::{CLOCK_BOOTTIME, CLOCK_TAI};
-
+#[cfg(unix)]
+pub use libc::{CLOCK_MONOTONIC, CLOCK_REALTIME};
 #[cfg(target_vendor = "apple")]
 pub use libc::{CLOCK_MONOTONIC_RAW_APPROX, CLOCK_UPTIME_RAW, CLOCK_UPTIME_RAW_APPROX};
-
 #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "dragonfly"))]
 pub use libc::{CLOCK_PROF, CLOCK_UPTIME};
 
@@ -315,43 +342,47 @@ fn nix_clock_id(id: ClockId) -> nix::time::ClockId {
     nix::time::ClockId::from_raw(id.as_raw())
 }
 
-#[cfg(unix)]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
 pub fn clock_gettime(id: ClockId) -> std::io::Result<Duration> {
-    nix::time::clock_gettime(nix_clock_id(id))
-        .map(Duration::from)
-        .map_err(std::io::Error::from)
-}
+    cfg_select! {
+        unix => nix::time::clock_gettime(nix_clock_id(id))
+            .map(Duration::from)
+            .map_err(std::io::Error::from),
+        _ => {
+            let mut ts = core::mem::MaybeUninit::<libc::timespec>::uninit();
 
-#[cfg(target_os = "wasi")]
-pub fn clock_gettime(id: ClockId) -> std::io::Result<Duration> {
-    let mut ts = core::mem::MaybeUninit::<libc::timespec>::uninit();
+            let ret = unsafe { libc::clock_gettime(id.as_raw(), ts.as_mut_ptr()) };
+            if ret != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
 
-    let ret = unsafe { libc::clock_gettime(id.as_raw(), ts.as_mut_ptr()) };
-    if ret != 0 {
-        return Err(std::io::Error::last_os_error());
+            let ts = unsafe { ts.assume_init() };
+
+            Ok(Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32))
+        }
     }
-
-    let ts = unsafe { ts.assume_init() };
-
-    Ok(Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32))
 }
 
-#[cfg(all(unix, not(target_os = "redox")))]
+#[cfg(any(
+    all(not(target_os = "redox"), unix),
+    target_abi = "polyasm",
+    target_os = "wasi"
+))]
 pub fn clock_getres(id: ClockId) -> std::io::Result<Duration> {
-    nix::time::clock_getres(nix_clock_id(id))
-        .map(Duration::from)
-        .map_err(std::io::Error::from)
-}
-
-#[cfg(target_os = "wasi")]
-pub fn clock_getres(id: ClockId) -> std::io::Result<Duration> {
-    let mut ts = core::mem::MaybeUninit::<libc::timespec>::uninit();
-    let ret = unsafe { libc::clock_getres(id.as_raw(), ts.as_mut_ptr()) };
-    if ret != 0 {
-        return Err(std::io::Error::last_os_error());
+    cfg_select! {
+        unix => nix::time::clock_getres(nix_clock_id(id))
+            .map(Duration::from)
+            .map_err(std::io::Error::from),
+        _ => {
+            let mut ts = core::mem::MaybeUninit::<libc::timespec>::uninit();
+            let ret = unsafe { libc::clock_getres(id.as_raw(), ts.as_mut_ptr()) };
+            if ret != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            let ts = unsafe { ts.assume_init() };
+            Ok(Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32))
+        }
     }
-    let ts = unsafe { ts.assume_init() };
-    Ok(Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32))
 }
 
 #[cfg(all(unix, not(target_os = "redox"), not(target_vendor = "apple")))]
@@ -373,14 +404,19 @@ pub fn clock_settime(id: ClockId, time: Duration) -> std::io::Result<()> {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(target_abi = "polyasm", unix))]
 pub fn nanosleep(duration: Duration) -> std::io::Result<()> {
-    let ts = nix::sys::time::TimeSpec::from(duration);
-    let ret = unsafe { libc::nanosleep(ts.as_ref(), core::ptr::null_mut()) };
-    if ret != 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
+    cfg_select! {
+        target_abi = "polyasm" => std::host::host().sleep(duration),
+        _ => {
+            let ts = nix::sys::time::TimeSpec::from(duration);
+            let ret = unsafe { libc::nanosleep(ts.as_ref(), core::ptr::null_mut()) };
+            if ret != 0 {
+                Err(std::io::Error::last_os_error())
+            } else {
+                Ok(())
+            }
+        }
     }
 }
 

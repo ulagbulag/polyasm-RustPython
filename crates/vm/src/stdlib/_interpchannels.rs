@@ -9,6 +9,8 @@ pub(crate) use _interpchannels::{channel_id_from_parts, channel_id_parts};
 
 #[pymodule]
 pub(crate) mod _interpchannels {
+    #[cfg(target_abi = "polyasm")]
+    use crate::common::lock::parking_lot;
     use crate::{
         AsObject, Py, PyObject, PyObjectRef, PyPayload, PyResult, VirtualMachine,
         builtins::{PyBaseExceptionRef, PyInt, PyMemoryView, PyModule, PyType},

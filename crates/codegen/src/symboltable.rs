@@ -562,7 +562,7 @@ mod stack {
         ///
         /// Without std, panic cleanup is not guaranteed (no catch_unwind).
         #[cfg(not(feature = "std"))]
-        pub fn with_append<F, R>(&mut self, x: &mut T, f: F) -> R
+        pub(super) fn with_append<F, R>(&mut self, x: &mut T, f: F) -> R
         where
             F: FnOnce(&mut Self) -> R,
         {

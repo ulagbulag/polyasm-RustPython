@@ -19,7 +19,6 @@ rustpython-unicode = { workspace = true }
 rustpython-wtf8 = { workspace = true }
 num_enum = { workspace = true }
 bitflags = { workspace = true }
-optional = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

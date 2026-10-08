@@ -1,10 +1,12 @@
 /*
  * I/O core tools.
  */
-pub(crate) use _io::module_def;
+#[cfg(target_abi = "polyasm")]
+use rustpython_host_env::libc;
 
+pub(crate) use self::_io::module_def;
 #[cfg(all(unix, feature = "threading", feature = "host_env"))]
-pub(crate) use _io::reinit_std_streams_after_fork;
+pub(crate) use self::_io::reinit_std_streams_after_fork;
 
 cfg_select! {
     any(not(target_arch = "wasm32"), target_os = "wasi") => {
@@ -172,29 +174,34 @@ mod _io {
     /// If so, call check_signals() and return Ok(None) to indicate retry.
     /// Otherwise, return Ok(Some(val)) for success or Err for other errors.
     /// This mirrors CPythons _PyIO_trap_eintr() pattern.
-    #[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
     fn trap_eintr<T>(result: PyResult<T>, vm: &VirtualMachine) -> PyResult<Option<T>> {
-        match result {
-            Ok(val) => Ok(Some(val)),
-            Err(exc) => {
-                // Check if its an OSError with errno == EINTR
-                if exc.fast_isinstance(vm.ctx.exceptions.os_error)
-                    && let Ok(errno_attr) = exc.as_object().get_attr("errno", vm)
-                    && let Ok(errno_val) = i32::try_from_object(vm, errno_attr)
-                    && host_io::is_interrupted_errno(errno_val)
-                {
-                    vm.check_signals()?;
-                    return Ok(None);
+        cfg_select! {
+            any(
+                not(all(not(target_abi = "polyasm"), target_arch = "wasm32")),
+                target_os = "wasi"
+            ) => {
+                match result {
+                    Ok(val) => Ok(Some(val)),
+                    Err(exc) => {
+                        // Check if its an OSError with errno == EINTR
+                        if exc.fast_isinstance(vm.ctx.exceptions.os_error)
+                            && let Ok(errno_attr) = exc.as_object().get_attr("errno", vm)
+                            && let Ok(errno_val) = i32::try_from_object(vm, errno_attr)
+                            && host_io::is_interrupted_errno(errno_val)
+                        {
+                            vm.check_signals()?;
+                            return Ok(None);
+                        }
+                        Err(exc)
+                    }
                 }
-                Err(exc)
+            }
+            _ => {
+                // WASM version: no EINTR handling needed
+                let _ = vm;
+                result.map(Some)
             }
         }
-    }
-
-    /// WASM version: no EINTR handling needed
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
-    fn trap_eintr<T>(result: PyResult<T>, _vm: &VirtualMachine) -> PyResult<Option<T>> {
-        result.map(Some)
     }
 
     pub(super) fn new_unsupported_operation<T: Into<String>>(
@@ -6047,7 +6054,7 @@ mod fileio {
                     (fd, None)
                 } else {
                     let path = OsPath::try_from_fspath(name.clone(), vm)?;
-                    #[cfg(any(unix, target_os = "wasi"))]
+                    #[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
                     let fd = host_io::open_path(&path.clone().into_cstring(vm)?, flags, 0o666);
                     #[cfg(windows)]
                     let fd = host_io::open_path(&path.to_wide_cstring(vm)?, flags, 0o666);

@@ -15,25 +15,26 @@
 #[path = "../openssl/ssl_data_31.rs"]
 mod ssl_data;
 
-#[cfg(target_arch = "wasm32")]
-use super::sock_wait_stub::{SockWaitKind, timeout_error_msg};
-#[cfg(not(target_arch = "wasm32"))]
-use crate::socket::{SockWaitKind, timeout_error_msg};
-use crate::vm::VirtualMachine;
 use rustpython_host_env::ssl::{TlsConnection, TlsError};
 use rustpython_vm::builtins::{PyBaseException, PyBaseExceptionRef};
 use rustpython_vm::convert::IntoPyException;
 use rustpython_vm::function::ArgBytesLike;
 use rustpython_vm::{AsObject, Py, PyObjectRef, PyPayload, PyResult, TryFromObject};
+
+#[cfg(not(all(not(target_abi = "polyasm"), target_arch = "wasm32")))]
+use crate::socket::{SockWaitKind, timeout_error_msg};
+use crate::vm::VirtualMachine;
+
 // Import PySSLSocket from parent module
 use super::_ssl::{PySSLSocket, SSL3_RT_MAX_PACKET_SIZE};
-
 // Import error types and helper functions from error module
 use super::error::{
     PySSLCertVerificationError, PySSLError, PySSLWantWriteError, create_ssl_eof_error,
     create_ssl_syscall_error, create_ssl_want_read_error, create_ssl_want_write_error,
     create_ssl_zero_return_error,
 };
+#[cfg(all(not(target_abi = "polyasm"), target_arch = "wasm32"))]
+use super::sock_wait_stub::{SockWaitKind, timeout_error_msg};
 
 // OpenSSL Constants:
 

@@ -199,7 +199,23 @@ impl ToPyObject for crt_fd::Borrowed<'_> {
 
 #[pymodule(sub, name = "posix")]
 pub(super) mod _os {
-    use super::{DirFd, DstDirFd, FollowSymlinks, RawMode, SrcDirFd, SupportFunc};
+    #[cfg(not(windows))]
+    use core::marker::PhantomData;
+    use core::{hint::cold_path, time::Duration};
+    use std::{fs, io, path::PathBuf, time::SystemTime};
+
+    use crossbeam_utils::atomic::AtomicCell;
+    use rustpython_common::wtf8::Wtf8Buf;
+    #[cfg(target_abi = "polyasm")]
+    use rustpython_host_env::libc;
+    #[cfg(all(
+        any(target_abi = "polyasm", target_os = "wasi", unix),
+        not(target_os = "redox")
+    ))]
+    use rustpython_host_env::posix as host_posix;
+    #[cfg(windows)]
+    use rustpython_host_env::{nt as host_nt, windows::ToWideString};
+
     #[cfg(not(windows))]
     use crate::exceptions;
     use crate::host_env::fileutils::StatStruct;
@@ -225,17 +241,8 @@ pub(super) mod _os {
         },
         vm::VirtualMachine,
     };
-    #[cfg(not(windows))]
-    use core::marker::PhantomData;
-    use core::{hint::cold_path, time::Duration};
-    use crossbeam_utils::atomic::AtomicCell;
-    use rustpython_common::wtf8::Wtf8Buf;
-    #[cfg(windows)]
-    use rustpython_host_env::{nt as host_nt, windows::ToWideString};
 
-    #[cfg(all(any(unix, target_os = "wasi"), not(target_os = "redox")))]
-    use rustpython_host_env::posix as host_posix;
-    use std::{fs, io, path::PathBuf, time::SystemTime};
+    use super::{DirFd, DstDirFd, FollowSymlinks, RawMode, SrcDirFd, SupportFunc};
 
     const OPEN_DIR_FD: bool = cfg!(not(any(windows, target_os = "redox")));
     pub(crate) const MKDIR_DIR_FD: bool = cfg!(any(unix, target_os = "wasi"));
@@ -279,7 +286,7 @@ pub(super) mod _os {
         }
     }
 
-    #[cfg(any(unix, windows, target_os = "wasi"))]
+    #[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
     #[derive(FromArgs)]
     struct OpenArgs<'fd> {
         path: OsPath,
@@ -295,7 +302,7 @@ pub(super) mod _os {
         os_open(args.path, args.flags, args.mode, args.dir_fd, vm)
     }
 
-    #[cfg(any(unix, windows, target_os = "wasi"))]
+    #[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
     pub(crate) fn os_open(
         name: OsPath,
         flags: i32,
@@ -1355,7 +1362,7 @@ pub(super) mod _os {
     impl StatResultData {
         fn from_stat(stat: &StatStruct, vm: &VirtualMachine) -> Self {
             let (atime, mtime, ctime);
-            #[cfg(all(any(unix, windows), not(target_os = "wasi")))]
+            #[cfg(all(any(target_abi = "polyasm", unix, windows), not(target_os = "wasi")))]
             {
                 atime = (stat.st_atime, stat.st_atime_nsec);
                 mtime = (stat.st_mtime, stat.st_mtime_nsec);
@@ -1659,13 +1666,14 @@ pub(super) mod _os {
 
     #[pyfunction]
     fn getpid(vm: &VirtualMachine) -> PyObjectRef {
-        let pid = if cfg!(target_arch = "wasm32") {
-            // Return an arbitrary value, greater than 1 which is special.
-            // The value 42 is picked from wasi-libc
-            // https://github.com/WebAssembly/wasi-libc/blob/wasi-sdk-21/libc-bottom-half/getpid/getpid.c
-            42
-        } else {
-            crate::host_env::os::process_id()
+        let pid: u32 = cfg_select! {
+            all(not(target_abi = "polyasm"), target_arch = "wasm32") => {
+                // Return an arbitrary value, greater than 1 which is special.
+                // The value 42 is picked from wasi-libc
+                // https://github.com/WebAssembly/wasi-libc/blob/wasi-sdk-21/libc-bottom-half/getpid/getpid.c
+                42
+            }
+            _ => crate::host_env::os::process_id(),
         };
         vm.ctx.new_int(pid).into()
     }
@@ -1903,7 +1911,7 @@ pub(super) mod _os {
         _follow_symlinks: FollowSymlinks,
         vm: &VirtualMachine,
     ) -> PyResult<()> {
-        #[cfg(any(target_os = "wasi", unix))]
+        #[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
         {
             #[cfg(not(target_os = "redox"))]
             {

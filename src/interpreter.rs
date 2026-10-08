@@ -15,8 +15,13 @@ impl InterpreterBuilderExt for InterpreterBuilder {
     fn init_stdlib(self) -> Self {
         let defs = rustpython_stdlib::stdlib_module_defs(&self.ctx);
         let builder = self.add_native_modules(&defs);
-        #[cfg(all(feature = "ssl-rustls-aws-lc", not(target_arch = "wasm32")))]
-        let builder = builder.init_hook(install_default_tls_provider);
+        let builder = cfg_select! {
+            all(
+                feature = "ssl-rustls-aws-lc",
+                not(all(not(target_abi = "polyasm"), target_arch = "wasm32"))
+            ) => builder.init_hook(install_default_tls_provider),
+            _ => builder,
+        };
 
         cfg_select! {
             feature = "freeze-stdlib" => {

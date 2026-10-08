@@ -4,6 +4,8 @@
 use crate::crt_fd;
 #[cfg(windows)]
 use crate::fs;
+#[cfg(target_abi = "polyasm")]
+use crate::libc_polyasm as libc;
 #[cfg(windows)]
 pub use crate::posix::rename;
 #[cfg(any(unix, target_os = "wasi"))]
@@ -75,10 +77,10 @@ pub use libc::{ST_NOSUID, ST_RDONLY};
 
 /// `open(2)` flags. libc on hosts that bind them; Darwin/BSD numbers on
 /// `wasm32-unknown-unknown`, matching the guest errno table.
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
 pub use libc::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY};
 
-#[cfg(unix)]
+#[cfg(any(target_abi = "polyasm", unix))]
 pub use libc::{O_ACCMODE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, O_NONBLOCK};
 
 #[cfg(any(
@@ -423,60 +425,54 @@ pub fn process_id() -> u32 {
     std::process::id()
 }
 
-#[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
 pub fn cpu_count() -> usize {
-    num_cpus::get()
-}
-
-#[cfg(not(any(not(target_arch = "wasm32"), target_os = "wasi")))]
-pub fn cpu_count() -> usize {
-    1
-}
-
-#[cfg(unix)]
-pub fn page_size() -> usize {
-    rustix::param::page_size()
-}
-
-#[cfg(target_arch = "wasm32")]
-pub const fn page_size() -> usize {
-    // WebAssembly's page size is a constant defined by the spec.
-    1024 * 64
-}
-
-#[cfg(windows)]
-pub fn page_size() -> usize {
-    let mut info = SYSTEM_INFO::default();
-    unsafe {
-        GetSystemInfo(&mut info);
+    cfg_select! {
+        any(
+            all(
+                all(not(target_abi = "polyasm"), target_arch = "wasm32"),
+                not(target_os = "wasi")
+            ),
+            target_abi = "polyasm"
+        ) => 1,
+        _ => num_cpus::get(),
     }
-    info.dwPageSize as _
 }
 
-#[cfg(unix)]
-pub fn alloc_granularity() -> usize {
-    // On Unix-likes, the page size is the smallest allocation unit rather than a separate concept
-    // of allocation granularity.
-    page_size()
-}
-
-#[cfg(target_arch = "wasm32")]
-pub const fn alloc_granularity() -> usize {
-    // Like Unix, WebAssembly doesn't separate page size and alloc granularity.
-    page_size()
-}
-
-#[cfg(windows)]
-pub fn alloc_granularity() -> usize {
-    let mut info = SYSTEM_INFO::default();
-    unsafe {
-        GetSystemInfo(&mut info);
+pub fn page_size() -> usize {
+    cfg_select! {
+        unix => rustix::param::page_size(),
+        target_abi = "polyasm" => crate::consts::PAGE_SIZE,
+        // WebAssembly's page size is a constant defined by the spec.
+        target_arch = "wasm32" => 1024 * 64,
+        windows => {
+            let mut info = SYSTEM_INFO::default();
+            unsafe {
+                GetSystemInfo(&mut info);
+            }
+            info.dwPageSize as _
+        }
     }
-    info.dwAllocationGranularity as _
+}
+
+pub fn alloc_granularity() -> usize {
+    cfg_select! {
+        // On Unix-likes, the page size is the smallest allocation unit rather than a separate concept
+        // of allocation granularity.
+        // Like Unix, WebAssembly doesn't separate page size and alloc granularity.
+        any(target_abi = "polyasm", target_arch = "wasm32", unix) => page_size(),
+        windows => {
+            let mut info = SYSTEM_INFO::default();
+            unsafe {
+                GetSystemInfo(&mut info);
+            }
+            info.dwAllocationGranularity as _
+        }
+    }
 }
 
 pub fn device_encoding(_fd: i32) -> Option<String> {
     #[cfg(any(
+        target_abi = "polyasm",
         target_os = "android",
         target_os = "redox",
         all(target_arch = "wasm32", not(target_os = "wasi"))
@@ -498,6 +494,7 @@ pub fn device_encoding(_fd: i32) -> Option<String> {
     }
 
     #[cfg(not(any(
+        target_abi = "polyasm",
         target_os = "android",
         target_os = "redox",
         windows,
@@ -525,27 +522,37 @@ pub fn exit(code: i32) -> ! {
 
 /// Wrapper around the C `abort()` call: terminates the process abnormally.
 pub fn abort() -> ! {
-    unsafe extern "C" {
-        fn abort() -> !;
+    cfg_select! {
+        target_abi = "polyasm" => std::process::abort(),
+        _ => {
+            unsafe extern "C" {
+                fn abort() -> !;
+            }
+            unsafe { abort() }
+        }
     }
-    unsafe { abort() }
 }
 
 /// Read `size` cryptographically random bytes from the OS.
 pub fn urandom(size: usize) -> io::Result<Vec<u8>> {
     let mut buf = vec![0u8; size];
-    getrandom::fill(&mut buf).map_err(io::Error::from)?;
+    cfg_select! {
+        target_abi = "polyasm" => std::host::host().fill_random(&mut buf)?,
+        _ => getrandom::fill(&mut buf).map_err(io::Error::from)?,
+    }
     Ok(buf)
 }
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
 pub fn isatty(fd: i32) -> bool {
-    unsafe { suppress_iph!(libc::isatty(fd)) != 0 }
-}
-
-#[cfg(not(any(unix, windows, target_os = "wasi")))]
-pub fn isatty(_fd: i32) -> bool {
-    false
+    cfg_select! {
+        any(target_abi = "polyasm", target_os = "wasi", unix, windows) => unsafe {
+            suppress_iph!(libc::isatty(fd)) != 0
+        },
+        _ => {
+            let _ = fd;
+            false
+        }
+    }
 }
 
 #[cfg(any(unix, windows))]
@@ -566,39 +573,35 @@ pub fn copy_file_range(
     rustix::fs::copy_file_range(src, offset_src, dst, offset_dst, count)
 }
 
-#[cfg(windows)]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
 pub fn seek_fd(
     fd: crt_fd::Borrowed<'_>,
     position: crt_fd::Offset,
     how: i32,
 ) -> io::Result<crt_fd::Offset> {
-    use crate::windows::CheckWin32Bool;
+    cfg_select! {
+        windows => {
+            use crate::windows::CheckWin32Bool;
 
-    let handle = crt_fd::as_handle(fd)?;
-    // `SetFilePointer` returns the low half of the new position and reports
-    // failure with the value a position four gigabytes in also has, so the two
-    // are only told apart through the error code. The `Ex` form answers with
-    // the whole position and a success flag of its own.
-    let mut new_position = 0;
-    unsafe {
-        SetFilePointerEx(
-            handle.as_raw_handle(),
-            position,
-            &mut new_position,
-            how as _,
-        )
+            let handle = crt_fd::as_handle(fd)?;
+            // `SetFilePointer` returns the low half of the new position and reports
+            // failure with the value a position four gigabytes in also has, so the two
+            // are only told apart through the error code. The `Ex` form answers with
+            // the whole position and a success flag of its own.
+            let mut new_position = 0;
+            unsafe {
+                SetFilePointerEx(
+                    handle.as_raw_handle(),
+                    position,
+                    &mut new_position,
+                    how as _,
+                )
+            }
+            .check_win32_bool()?;
+            Ok(new_position)
+        }
+        _ => unsafe { suppress_iph!(libc::lseek(fd.as_raw(), position, how)) }.check_libc_neg(),
     }
-    .check_win32_bool()?;
-    Ok(new_position)
-}
-
-#[cfg(any(unix, target_os = "wasi"))]
-pub fn seek_fd(
-    fd: crt_fd::Borrowed<'_>,
-    position: crt_fd::Offset,
-    how: i32,
-) -> io::Result<crt_fd::Offset> {
-    unsafe { suppress_iph!(libc::lseek(fd.as_raw(), position, how)) }.check_libc_neg()
 }
 
 #[cfg(windows)]
@@ -690,7 +693,7 @@ pub fn io_error_from_errno(errno: i32) -> io::Error {
     io::Error::new(kind, CrtErrno(errno))
 }
 
-#[cfg(all(not(windows), not(target_arch = "wasm32")))]
+#[cfg(all(not(target_abi = "polyasm"), not(target_arch = "wasm32"), not(windows)))]
 impl ErrorExt for rustix::io::Errno {
     fn posix_errno(&self) -> i32 {
         self.raw_os_error()
@@ -778,44 +781,44 @@ pub fn clear_errno() {
 }
 
 /// Set errno to the specified value.
-#[cfg(windows)]
 pub fn set_errno(value: i32) {
-    unsafe extern "C" {
-        fn _set_errno(value: i32) -> i32;
+    cfg_select! {
+        windows => {
+            unsafe extern "C" {
+                fn _set_errno(value: i32) -> i32;
+            }
+            unsafe { suppress_iph!(_set_errno(value)) };
+        }
+        unix => nix::errno::Errno::from_raw(value).set(),
+        target_abi = "polyasm" => std::os::polyasm::errno::set(value),
+        target_os = "wasi" => unsafe {
+            *libc::__errno_location() = value;
+        },
+        _ => {
+            let _ = value;
+        }
     }
-    unsafe { suppress_iph!(_set_errno(value)) };
 }
 
-#[cfg(unix)]
-pub fn set_errno(value: i32) {
-    nix::errno::Errno::from_raw(value).set();
-}
-
-#[cfg(target_os = "wasi")]
-pub fn set_errno(value: i32) {
-    unsafe {
-        *libc::__errno_location() = value;
+// WASIp1 and PolyASM, like Unix, provide byte-preserving OsStr conversions.
+pub fn bytes_as_os_str(b: &[u8]) -> Result<&std::ffi::OsStr, Utf8Error> {
+    cfg_select! {
+        any(
+            all(not(target_env = "p2"), target_os = "wasi"),
+            target_abi = "polyasm",
+            unix
+        ) => {
+            use self::ffi::OsStrExt;
+            Ok(std::ffi::OsStr::from_bytes(b))
+        }
+        _ => Ok(core::str::from_utf8(b)?.as_ref()),
     }
 }
 
-#[cfg(not(any(unix, windows, target_os = "wasi")))]
-pub fn set_errno(_value: i32) {}
-
-// WASIp1, like Unix, provides byte-preserving OsStr conversions.
-#[cfg(any(unix, all(target_os = "wasi", not(target_env = "p2"))))]
-pub fn bytes_as_os_str(b: &[u8]) -> Result<&std::ffi::OsStr, Utf8Error> {
-    use self::ffi::OsStrExt;
-    Ok(std::ffi::OsStr::from_bytes(b))
-}
-
-#[cfg(not(any(unix, all(target_os = "wasi", not(target_env = "p2")))))]
-pub fn bytes_as_os_str(b: &[u8]) -> Result<&std::ffi::OsStr, Utf8Error> {
-    Ok(core::str::from_utf8(b)?.as_ref())
-}
-
+#[cfg(target_abi = "polyasm")]
+pub use std::os::polyasm::ffi;
 #[cfg(unix)]
 pub use std::os::unix::ffi;
-
 // WASIp1 uses stable std::os::wasi::ffi
 #[cfg(all(target_os = "wasi", not(target_env = "p2")))]
 pub use std::os::wasi::ffi;

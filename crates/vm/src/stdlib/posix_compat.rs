@@ -6,19 +6,18 @@ pub(crate) use module::module_def;
 
 #[pymodule(name = "posix", with(
     super::os::_os,
-    #[cfg(any(unix, target_os = "wasi"))]
+    #[cfg(any(target_abi = "polyasm", target_os = "wasi", unix))]
     super::posix_unix_like::_posix_unix_like,
 ))]
 pub(crate) mod module {
     use crate::{
-        Py, PyObjectRef, PyResult, VirtualMachine,
+        Py, PyResult, VirtualMachine,
         builtins::PyStrRef,
-        ospath::OsPath,
-        stdlib::os::{_os, DirFd, SupportFunc, SymlinkArgs, TargetIsDirectory},
+        stdlib::os::{DirFd, SupportFunc, SymlinkArgs},
     };
 
     #[derive(FromArgs)]
-    struct AccessArgs<'a> {
+    pub(super) struct AccessArgs<'a> {
         #[pyarg(any)]
         path: PyStrRef,
         #[pyarg(any)]
@@ -34,16 +33,59 @@ pub(crate) mod module {
     #[pyfunction]
     pub(super) fn access(args: AccessArgs<'_>, vm: &VirtualMachine) -> PyResult<bool> {
         let [] = args.dir_fd.0;
-        let _ = (
-            args.path,
-            args.mode,
-            args.effective_ids,
-            args.follow_symlinks,
-        );
-        os_unimpl("os.access", vm)
+        let _ = (args.effective_ids, args.follow_symlinks);
+        cfg_select! {
+            target_abi = "polyasm" => {
+                use crate::convert::IntoPyException;
+
+                let path = args.path.to_string_lossy();
+                rustpython_host_env::posix::check_access(std::path::Path::new(&*path), args.mode)
+                    .map_err(|err| err.into_pyexception(vm))
+            }
+            _ => {
+                let _ = (args.path, args.mode);
+                os_unimpl("os.access", vm)
+            }
+        }
     }
 
-    #[cfg(not(target_os = "wasi"))]
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    const fn getppid() -> i32 {
+        rustpython_host_env::posix::getppid()
+    }
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    const fn getuid() -> u32 {
+        rustpython_host_env::posix::getuid()
+    }
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    const fn geteuid() -> u32 {
+        rustpython_host_env::posix::geteuid()
+    }
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    const fn getgid() -> u32 {
+        rustpython_host_env::posix::getgid()
+    }
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    const fn getegid() -> u32 {
+        rustpython_host_env::posix::getegid()
+    }
+
+    #[cfg(target_abi = "polyasm")]
+    #[pyfunction]
+    fn umask(mask: u32) -> u32 {
+        rustpython_host_env::posix::umask(mask)
+    }
+
+    #[cfg(not(any(target_abi = "polyasm", target_os = "wasi")))]
     #[derive(FromArgs)]
     struct RemoveArgs<'a> {
         #[pyarg(any)]
@@ -52,16 +94,24 @@ pub(crate) mod module {
         dir_fd: DirFd<'a, 0>,
     }
 
-    #[cfg(not(target_os = "wasi"))]
+    #[cfg(not(any(target_abi = "polyasm", target_os = "wasi")))]
     #[pyfunction]
     #[pyfunction(name = "unlink")]
     fn remove(args: RemoveArgs<'_>, vm: &VirtualMachine) -> PyResult<()> {
         let [] = args.dir_fd.0;
-        fs::remove_file(&args.path).map_err(|err| err.into_pyexception(vm))
+        std::fs::remove_file(&args.path).map_err(|err| err.into_pyexception(vm))
     }
 
     #[pyfunction]
-    pub(super) fn symlink(_args: SymlinkArgs<'_>, vm: &VirtualMachine) -> PyResult<()> {
+    pub(super) fn symlink(args: SymlinkArgs<'_>, vm: &VirtualMachine) -> PyResult<()> {
+        cfg_select! {
+            target_abi = "polyasm" => {
+                let _ = (args.src, args.dst, args.target_is_directory);
+            }
+            _ => {
+                let _ = args;
+            }
+        }
         os_unimpl("os.symlink", vm)
     }
 

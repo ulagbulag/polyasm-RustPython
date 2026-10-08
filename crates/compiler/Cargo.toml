@@ -17,6 +17,16 @@ ruff_source_file = { workspace = true }
 ruff_text_size = { workspace = true }
 thiserror = { workspace = true }
 
+[target.'cfg(not(target_abi = "polyasm"))'.dependencies]
+ruff_python_ast = { workspace = true, features = ["std"] }
+ruff_python_parser = { workspace = true, features = ["std"] }
+ruff_source_file = { workspace = true, features = ["std"] }
+ruff_text_size = { workspace = true, features = ["std"] }
+rustpython-codegen = { workspace = true, features = ["std"] }
+
+[target.'cfg(target_abi = "polyasm")'.dependencies]
+rustpython-std = { workspace = true }
+
 [dev-dependencies]
 
 [lints]

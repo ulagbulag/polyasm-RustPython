@@ -52,11 +52,23 @@ fn main() {
     );
 }
 
+/// A PolyASM build names the 0.6.0 release with the build id `polyasm` in place of the
+/// repository state, and so runs no version-control command.
+fn polyasm() -> bool {
+    env::var("CARGO_CFG_TARGET_ABI").is_ok_and(|abi| abi == "polyasm")
+}
+
 fn git_hash() -> String {
+    if polyasm() {
+        return "polyasm".into();
+    }
     git(&["rev-parse", "--short", "HEAD"]).unwrap_or_else(|_| "0000000".into())
 }
 
 fn git_timestamp() -> String {
+    if polyasm() {
+        return "0".into();
+    }
     git(&["log", "-1", "--format=%ct"]).unwrap_or_else(|_| {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -67,11 +79,17 @@ fn git_timestamp() -> String {
 }
 
 fn git_tag() -> String {
+    if polyasm() {
+        return "tags/0.6.0".into();
+    }
     git(&["describe", "--all", "--always", "--dirty"])
         .unwrap_or_else(|_| "heads/unknown-branch".into())
 }
 
 fn git_branch() -> String {
+    if polyasm() {
+        return "polyasm".into();
+    }
     git(&["name-rev", "--name-only", "HEAD"]).unwrap_or_else(|_| "unknown-branch".into())
 }
 

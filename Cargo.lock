@@ -80,9 +80,8 @@ dependencies = [
 
 [[package]]
 name = "aho-corasick"
-version = "1.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddd31a130427c27518df266943a5308ed92d4b226cc639f5a8f1002816174301"
+version = "1.1.5"
+source = "git+https://github.com/ulagbulag/polyasm-aho-corasick?branch=feat%2Fpolyasm#f81b12482e0567b04b814b4679944b7a62279854"
 dependencies = [
  "memchr",
 ]
@@ -182,8 +181,7 @@ checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 [[package]]
 name = "arrayvec"
 version = "0.7.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
+source = "git+https://github.com/ulagbulag/polyasm-arrayvec?branch=feat%2Fpolyasm#b6ba2a81de114a9a6a0f852451dcb1a055fea46e"
 
 [[package]]
 name = "ascii"
@@ -426,8 +424,7 @@ dependencies = [
 [[package]]
 name = "bstr"
 version = "1.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f7dc094d718f2e1c1559ad110e27eeaae14a5465d3d56dd6dbd793079fbd530"
+source = "git+https://github.com/ulagbulag/polyasm-bstr?branch=feat%2Fpolyasm#7e038c37345499fdc250470c4e59188610e1c07d"
 dependencies = [
  "memchr",
  "regex-automata",
@@ -723,7 +720,7 @@ dependencies = [
  "rayon",
  "regex",
  "serde",
- "serde_derive",
+ "serde_derive 1.0.228 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json",
  "tinytemplate",
  "walkdir",
@@ -1494,7 +1491,7 @@ checksum = "1fc2706461e1ee94f55cab2ed2e3d34ae9536cfa830358ef80acff1a3dacab30"
 dependencies = [
  "lazy_static 0.2.11",
  "serde",
- "serde_derive",
+ "serde_derive 1.0.228 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json",
  "thread-id",
 ]
@@ -1662,8 +1659,7 @@ dependencies = [
 [[package]]
 name = "getrandom"
 version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
+source = "git+https://github.com/ulagbulag/polyasm-getrandom?branch=feat%2Fpolyasm#c60a4bb390c3a795b70afbb2c325235542612815"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -1779,12 +1775,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "hexf-parse"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
-
-[[package]]
 name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1832,8 +1822,7 @@ dependencies = [
 [[package]]
 name = "icu_casemap"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "070f98b5b82798fcb93654bf96ed9f40064fc44c86f51a09ea711092cd5cc5be"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "icu_casemap_data",
  "icu_collections",
@@ -1848,14 +1837,12 @@ dependencies = [
 [[package]]
 name = "icu_casemap_data"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "846b0857ca091204be3c874bc93daaf89d4777e8d2d20b0d3ffe8f671d98014b"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "icu_collections"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2984d1cd16c883d7935b9e07e44071dca8d917fd52ecc02c04d5fa0b5a3f191c"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "displaydoc",
  "potential_utf",
@@ -1869,8 +1856,7 @@ dependencies = [
 [[package]]
 name = "icu_locale"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5a396343c7208121dc86e35623d3dfe19814a7613cfd14964994cdc9c9a2e26"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "icu_collections",
  "icu_locale_core",
@@ -1884,8 +1870,7 @@ dependencies = [
 [[package]]
 name = "icu_locale_core"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92219b62b3e2b4d88ac5119f8904c10f8f61bf7e95b640d25ba3075e6cac2c29"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "displaydoc",
  "litemap",
@@ -1898,14 +1883,12 @@ dependencies = [
 [[package]]
 name = "icu_locale_data"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5fdcc9ac77c6d74ff5cf6e65ef3181d6af32003b16fce3a77fb451d2f695993"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "icu_normalizer"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c56e5ee99d6e3d33bd91c5d85458b6005a22140021cc324cea84dd0e72cff3b4"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "icu_collections",
  "icu_normalizer_data",
@@ -1921,14 +1904,12 @@ dependencies = [
 [[package]]
 name = "icu_normalizer_data"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da3be0ae77ea334f4da67c12f149704f19f81d1adf7c51cf482943e84a2bad38"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "icu_properties"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bee3b67d0ea5c2cca5003417989af8996f8604e34fb9ddf96208a033901e70de"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "icu_collections",
  "icu_locale_core",
@@ -1941,14 +1922,12 @@ dependencies = [
 [[package]]
 name = "icu_properties_data"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e2bbb201e0c04f7b4b3e14382af113e17ba4f63e2c9d2ee626b720cbce54a14"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "icu_provider"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "139c4cf31c8b5f33d7e199446eff9c1e02decfc2f0eec2c8d71f65befa45b421"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "displaydoc",
  "icu_locale_core",
@@ -2178,7 +2157,7 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 dependencies = [
- "spin",
+ "spin 0.9.9",
 ]
 
 [[package]]
@@ -2316,8 +2295,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 [[package]]
 name = "litemap"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "lock_api"
@@ -2337,11 +2315,7 @@ checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 [[package]]
 name = "lz4_flex"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecbdfe44b1bd960b68170b417450a628c43f7cf56bb3c5317e61cb230ee7f226"
-dependencies = [
- "twox-hash",
-]
+source = "git+https://github.com/ulagbulag/polyasm-lz4_flex?branch=feat%2Fpolyasm#feda5dad364c66456b3464eda69575f1f70a552b"
 
 [[package]]
 name = "mac_address"
@@ -2365,8 +2339,7 @@ dependencies = [
 [[package]]
 name = "malachite-base"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f368e032195e6f046f237a982cd541cac7d4e17d5c680cac5534dfa71cd8879e"
+source = "git+https://github.com/ulagbulag/polyasm-malachite?branch=feat%2Fpolyasm#92e2e2a8809e9c03fe7bb216e69cfff10155c54a"
 dependencies = [
  "hashbrown 0.16.1",
  "itertools 0.14.0",
@@ -2377,8 +2350,7 @@ dependencies = [
 [[package]]
 name = "malachite-bigint"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d673b71d4521ba5ca045cd23d62eda6b321474ff231d6a1698cc9b892851f2"
+source = "git+https://github.com/ulagbulag/polyasm-malachite?branch=feat%2Fpolyasm#92e2e2a8809e9c03fe7bb216e69cfff10155c54a"
 dependencies = [
  "malachite-base",
  "malachite-nz",
@@ -2390,8 +2362,7 @@ dependencies = [
 [[package]]
 name = "malachite-nz"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec0b3ad1a8d2a722fbfad2e1fc7c5044f7ab38e027240cfbcb086a62ca95c9c2"
+source = "git+https://github.com/ulagbulag/polyasm-malachite?branch=feat%2Fpolyasm#92e2e2a8809e9c03fe7bb216e69cfff10155c54a"
 dependencies = [
  "itertools 0.14.0",
  "libm",
@@ -2402,8 +2373,7 @@ dependencies = [
 [[package]]
 name = "malachite-q"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7841d36b3f5d39f1c65d4bcc45cb104fde66cf7eafc10da3922483fa2847cb94"
+source = "git+https://github.com/ulagbulag/polyasm-malachite?branch=feat%2Fpolyasm#92e2e2a8809e9c03fe7bb216e69cfff10155c54a"
 dependencies = [
  "itertools 0.14.0",
  "libm",
@@ -2447,8 +2417,7 @@ dependencies = [
 [[package]]
 name = "memchr"
 version = "2.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+source = "git+https://github.com/ulagbulag/polyasm-memchr?branch=feat%2Fpolyasm#41cf57cbf9dfcfdcb90a03681f0332af78613a76"
 
 [[package]]
 name = "memmap2"
@@ -2600,8 +2569,7 @@ dependencies = [
 [[package]]
 name = "num-traits"
 version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
+source = "git+https://github.com/ulagbulag/polyasm-num-traits?branch=feat%2Fpolyasm#5e47911d003c62e64cdd3fc2c2dc1f315a9f7117"
 dependencies = [
  "autocfg",
  "libm",
@@ -2738,12 +2706,6 @@ name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
-
-[[package]]
-name = "optional"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978aa494585d3ca4ad74929863093e87cac9790d81fe7aba2b3dc2890643a0fc"
 
 [[package]]
 name = "ordermap"
@@ -3065,8 +3027,7 @@ dependencies = [
 [[package]]
 name = "portable-atomic"
 version = "1.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
+source = "git+https://github.com/ulagbulag/polyasm-portable-atomic?branch=feat%2Fpolyasm#ecc2613d252b8a82124431d488edc60865c7fe6b"
 
 [[package]]
 name = "portable-atomic-util"
@@ -3080,8 +3041,7 @@ dependencies = [
 [[package]]
 name = "potential_utf"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0103b1cef7ec0cf76490e969665504990193874ea05c85ff9bab8b911d0a0564"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "serde_core",
  "writeable",
@@ -3155,8 +3115,7 @@ dependencies = [
 [[package]]
 name = "pymath"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc10e50b7a1f2cc3887e983721cb51fc7574be0066c84bff3ef9e5c096e8d6d5"
+source = "git+https://github.com/ulagbulag/polyasm-pymath?branch=feat%2Fpolyasm#b3fc1f6c2db029e9912697396851c6a09a405b71"
 dependencies = [
  "libc",
  "libm",
@@ -3424,8 +3383,7 @@ dependencies = [
 [[package]]
 name = "regex"
 version = "1.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1292b7759ae1cb9ec195452d1390a074f0cd8541ab7a5a8c31cd6db45d4a6ba"
+source = "git+https://github.com/ulagbulag/polyasm-regex?branch=feat%2Fpolyasm#e82391e0f04e02d81d18b1ba2e9f1a82c356815e"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3435,9 +3393,8 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e1dd4122fc1595e8162618945476892eefca7b88c52820e74af6262213cae8f"
+version = "0.4.18"
+source = "git+https://github.com/ulagbulag/polyasm-regex?branch=feat%2Fpolyasm#e82391e0f04e02d81d18b1ba2e9f1a82c356815e"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3447,8 +3404,7 @@ dependencies = [
 [[package]]
 name = "regex-syntax"
 version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+source = "git+https://github.com/ulagbulag/polyasm-regex?branch=feat%2Fpolyasm#e82391e0f04e02d81d18b1ba2e9f1a82c356815e"
 
 [[package]]
 name = "region"
@@ -3732,6 +3688,7 @@ dependencies = [
  "rustpython-ruff_python_ast",
  "rustpython-ruff_python_parser",
  "rustpython-ruff_text_size",
+ "rustpython-std",
  "rustpython-unicode",
  "rustpython-wtf8",
  "thiserror",
@@ -3763,6 +3720,7 @@ dependencies = [
  "parking_lot",
  "radium",
  "rustpython-literal",
+ "rustpython-std",
  "rustpython-unicode",
  "rustpython-wtf8",
  "scrypt",
@@ -3786,6 +3744,7 @@ dependencies = [
  "rustpython-ruff_python_parser",
  "rustpython-ruff_source_file",
  "rustpython-ruff_text_size",
+ "rustpython-std",
  "thiserror",
 ]
 
@@ -3853,7 +3812,6 @@ dependencies = [
  "memchr",
  "memmap2",
  "nix 0.31.3",
- "num-traits",
  "num_cpus",
  "parking_lot",
  "paste",
@@ -3863,6 +3821,7 @@ dependencies = [
  "rustls-native-certs",
  "rustls-pemfile",
  "rustls-webpki 0.103.13",
+ "rustpython-std",
  "rustpython-wtf8",
  "rustyline",
  "schannel",
@@ -3896,11 +3855,11 @@ dependencies = [
 name = "rustpython-literal"
 version = "0.6.0"
 dependencies = [
- "hexf-parse",
  "is-macro",
  "lexical-parse-float",
  "num-traits",
  "rand 0.10.2",
+ "rustpython-std",
  "rustpython-unicode",
  "rustpython-wtf8",
 ]
@@ -3917,8 +3876,7 @@ dependencies = [
 [[package]]
 name = "rustpython-ruff_python_ast"
 version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc19eeb4cfa2c35428143693eadf85ee78816f22a829298593581a56700c0a21"
+source = "git+https://github.com/ulagbulag/polyasm-ruff?branch=feat%2Fpolyasm#9f2a45a79072c3e747a00f1e14f19b8e8fb7f47d"
 dependencies = [
  "aho-corasick",
  "arrayvec",
@@ -3926,12 +3884,14 @@ dependencies = [
  "char_str",
  "compact_str",
  "get-size2",
+ "hashbrown 0.17.1",
  "is-macro",
  "memchr",
  "rustc-hash",
  "rustpython-ruff_python_trivia",
  "rustpython-ruff_source_file",
  "rustpython-ruff_text_size",
+ "spin 0.10.1",
  "thin-vec",
  "thiserror",
 ]
@@ -3939,13 +3899,13 @@ dependencies = [
 [[package]]
 name = "rustpython-ruff_python_parser"
 version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "480eec9ac4dda77b6724f0c9a54a81d3c57868d6a707c3d7c5133fd83c933f66"
+source = "git+https://github.com/ulagbulag/polyasm-ruff?branch=feat%2Fpolyasm#9f2a45a79072c3e747a00f1e14f19b8e8fb7f47d"
 dependencies = [
  "bitflags 2.13.1",
  "bstr",
  "drop_bomb",
  "get-size2",
+ "hashbrown 0.17.1",
  "memchr",
  "rustc-hash",
  "rustpython-ruff_python_ast",
@@ -3962,9 +3922,9 @@ dependencies = [
 [[package]]
 name = "rustpython-ruff_python_trivia"
 version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d69a5d9bb610a76bee05d23adce0de55f0fa06f251c0e1c7f7a0c625a366a58"
+source = "git+https://github.com/ulagbulag/polyasm-ruff?branch=feat%2Fpolyasm#9f2a45a79072c3e747a00f1e14f19b8e8fb7f47d"
 dependencies = [
+ "hashbrown 0.17.1",
  "itertools 0.15.0",
  "rustc-hash",
  "rustpython-ruff_source_file",
@@ -3975,18 +3935,17 @@ dependencies = [
 [[package]]
 name = "rustpython-ruff_source_file"
 version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3aa9c91c8a4e86bf0fa8a67aec284fa6c0c533cdefb900b08584be15748c606"
+source = "git+https://github.com/ulagbulag/polyasm-ruff?branch=feat%2Fpolyasm#9f2a45a79072c3e747a00f1e14f19b8e8fb7f47d"
 dependencies = [
  "memchr",
  "rustpython-ruff_text_size",
+ "spin 0.10.1",
 ]
 
 [[package]]
 name = "rustpython-ruff_text_size"
 version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fedbd1af4f91cd828185123d95119662db9c4a0b21c02b695783d74360d4f46"
+source = "git+https://github.com/ulagbulag/polyasm-ruff?branch=feat%2Fpolyasm#9f2a45a79072c3e747a00f1e14f19b8e8fb7f47d"
 dependencies = [
  "get-size2",
 ]
@@ -3998,9 +3957,16 @@ dependencies = [
  "bitflags 2.13.1",
  "codspeed-criterion-compat",
  "num_enum",
- "optional",
  "rustpython-unicode",
  "rustpython-wtf8",
+]
+
+[[package]]
+name = "rustpython-std"
+version = "0.6.0"
+dependencies = [
+ "hashbrown 0.17.1",
+ "libm",
 ]
 
 [[package]]
@@ -4045,6 +4011,7 @@ dependencies = [
  "rustpython-ruff_python_parser",
  "rustpython-ruff_source_file",
  "rustpython-ruff_text_size",
+ "rustpython-std",
  "rustpython-unicode",
  "rustpython-vm",
  "scopeguard",
@@ -4101,7 +4068,6 @@ dependencies = [
  "num-integer",
  "num-traits",
  "num_enum",
- "optional",
  "parking_lot",
  "paste",
  "psm",
@@ -4120,6 +4086,7 @@ dependencies = [
  "rustpython-ruff_python_parser",
  "rustpython-ruff_text_size",
  "rustpython-sre_engine",
+ "rustpython-std",
  "rustpython-unicode",
  "scopeguard",
  "serde_core",
@@ -4305,7 +4272,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
- "serde_derive",
+ "serde_derive 1.0.228 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4322,10 +4289,9 @@ dependencies = [
 [[package]]
 name = "serde_core"
 version = "1.0.228"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
+source = "git+https://github.com/ulagbulag/polyasm-serde?branch=feat%2Fpolyasm#619d5b1f7954b8c8bd26bb816e402bc9e1e00d6e"
 dependencies = [
- "serde_derive",
+ "serde_derive 1.0.228 (git+https://github.com/ulagbulag/polyasm-serde?branch=feat%2Fpolyasm)",
 ]
 
 [[package]]
@@ -4333,6 +4299,16 @@ name = "serde_derive"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.228"
+source = "git+https://github.com/ulagbulag/polyasm-serde?branch=feat%2Fpolyasm#619d5b1f7954b8c8bd26bb816e402bc9e1e00d6e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4459,8 +4435,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "smallvec"
 version = "1.15.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
+source = "git+https://github.com/ulagbulag/polyasm-rust-smallvec?branch=feat%2Fpolyasm#3ec01a398083fd39541dcea50f2120029e7a1e00"
 
 [[package]]
 name = "socket2"
@@ -4477,6 +4452,12 @@ name = "spin"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3763264f6b73151db08c50ff20d7d8a0b8796e021cdea7ceedad07b80155fa0e"
+
+[[package]]
+name = "spin"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "023a211cb3138dbc438680b32560ad89f699977624c9f8dbb95a47d5b4c07dd3"
 
 [[package]]
 name = "spki"
@@ -4732,8 +4713,7 @@ dependencies = [
 [[package]]
 name = "tinystr"
 version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8323304221c2a851516f22236c5722a72eaa19749016521d6dff0824447d96d"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "displaydoc",
  "serde_core",
@@ -4803,12 +4783,6 @@ name = "toml_writer"
 version = "1.1.1+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
-
-[[package]]
-name = "twox-hash"
-version = "2.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ea3136b675547379c4bd395ca6b938e5ad3c3d20fad76e7fe85f9e0d011419c"
 
 [[package]]
 name = "typenum"
@@ -5094,8 +5068,7 @@ dependencies = [
 [[package]]
 name = "wide"
 version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfdfe6a32973f2d1b268b8895845a8a96cac2f0191e72c27cc929036060dbf89"
+source = "git+https://github.com/ulagbulag/polyasm-wide?branch=feat%2Fpolyasm#d224495e78b0527b98f5187e515cec4c672e2461"
 dependencies = [
  "bytemuck",
  "safe_arch",
@@ -5256,9 +5229,8 @@ checksum = "d1890f4022759daae28ed4fe62859b1236caebfc61ede2f63ed4e695f3f6d936"
 
 [[package]]
 name = "writeable"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
+version = "0.6.2"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 
 [[package]]
 name = "x25519-dalek"
@@ -5326,9 +5298,8 @@ dependencies = [
 
 [[package]]
 name = "yoke"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "709fe23a0424b6a435d82152b1bd3fdfb0833487d5fa90d05d42762a9891fef5"
+version = "0.8.2"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "stable_deref_trait",
  "yoke-derive",
@@ -5338,8 +5309,7 @@ dependencies = [
 [[package]]
 name = "yoke-derive"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de844c262c8848816172cef550288e7dc6c7b7814b4ee56b3e1553f275f1858e"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5349,18 +5319,16 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.53"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75726053136156d419e285b9b7eddaaea9e3fea6ce32eed44a89901f0bd98de1"
+version = "0.8.55"
+source = "git+https://github.com/ulagbulag/polyasm-zerocopy?branch=feat%2Fpolyasm#596f29759e5ed65d15a3d38474a1b72dbfe58445"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.53"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4714fd92cf900833d49538023a9b3915155210801d1c1169eba513b2addefd71"
+version = "0.8.55"
+source = "git+https://github.com/ulagbulag/polyasm-zerocopy?branch=feat%2Fpolyasm#596f29759e5ed65d15a3d38474a1b72dbfe58445"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5369,9 +5337,8 @@ dependencies = [
 
 [[package]]
 name = "zerofrom"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ec05a11813ea801ff6d75110ad09cd0824ddba17dfe17128ea0d5f68e6c5272"
+version = "0.1.7"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "zerofrom-derive",
 ]
@@ -5379,8 +5346,7 @@ dependencies = [
 [[package]]
 name = "zerofrom-derive"
 version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11532158c46691caf0f2593ea8358fed6bbf68a0315e80aae9bd41fbade684a1"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5411,8 +5377,7 @@ dependencies = [
 [[package]]
 name = "zerotrie"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f9152d31db0792fa83f70fb2f83148effb5c1f5b8c7686c3459e361d9bc20bf"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "displaydoc",
  "yoke",
@@ -5423,8 +5388,7 @@ dependencies = [
 [[package]]
 name = "zerovec"
 version = "0.11.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90f911cbc359ab6af17377d242225f4d75119aec87ea711a880987b18cd7b239"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "serde",
  "yoke",
@@ -5435,8 +5399,7 @@ dependencies = [
 [[package]]
 name = "zerovec-derive"
 version = "0.11.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "625dc425cab0dca6dc3c3319506e6593dcb08a9f387ea3b284dbd52a92c40555"
+source = "git+https://github.com/ulagbulag/polyasm-icu4x?branch=feat%2Fpolyasm#23220d8887cc95bc2625fb816884cf45375f1140"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5454,3 +5417,8 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[patch.unused]]
+name = "jiff"
+version = "0.2.35"
+source = "git+https://github.com/ulagbulag/polyasm-jiff?branch=feat%2Fpolyasm#ed3b3469a84faa4a1aceb0347760c6534846fc1c"

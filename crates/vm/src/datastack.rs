@@ -10,10 +10,9 @@ use core::ptr;
 
 /// Minimum chunk size in bytes (`_PY_DATA_STACK_CHUNK_SIZE`).
 /// Smaller on WASM (4 KB) to reduce initial memory footprint; 16 KB otherwise.
-const MIN_CHUNK_SIZE: usize = if cfg!(target_arch = "wasm32") {
-    4 * 1024
-} else {
-    16 * 1024
+const MIN_CHUNK_SIZE: usize = cfg_select! {
+    all(not(target_abi = "polyasm"), target_arch = "wasm32") => 4 * 1024,
+    _ => 16 * 1024,
 };
 
 /// Extra headroom (in bytes) to avoid allocating a new chunk for the next

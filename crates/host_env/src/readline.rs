@@ -69,7 +69,7 @@ pub mod basic_readline {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_abi = "polyasm", target_arch = "wasm32")))]
 pub mod rustyline_readline {
     use super::*;
 
@@ -166,10 +166,16 @@ pub mod rustyline_readline {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-use basic_readline as readline_inner;
-#[cfg(not(target_arch = "wasm32"))]
-use rustyline_readline as readline_inner;
+mod readline_inner {
+    cfg_select! {
+        any(target_abi = "polyasm", target_arch = "wasm32") => {
+            pub use super::basic_readline::*;
+        }
+        _ => {
+            pub use super::rustyline_readline::*;
+        }
+    }
+}
 
 pub use readline_inner::Helper;
 

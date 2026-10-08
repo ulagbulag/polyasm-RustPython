@@ -50,6 +50,36 @@ pub(crate) use _ssl::module_def;
 #[allow(non_upper_case_globals)]
 #[pymodule(with(error::ssl_error))]
 mod _ssl {
+    use alloc::sync::Arc;
+    use core::{
+        hash::{Hash, Hasher},
+        hint::cold_path,
+        sync::atomic::{AtomicUsize, Ordering},
+        time::Duration,
+    };
+    use std::{
+        collections::{HashMap, hash_map::DefaultHasher},
+        time::SystemTime,
+    };
+
+    // Rustls imports
+    use parking_lot::RwLock as ParkingRwLock;
+    use pem_rfc7468::{LineEnding, encode_string};
+    use rustls::{
+        ClientConnection, Connection, HandshakeKind, RootCertStore,
+        crypto::SupportedKxGroup,
+        pki_types::{CertificateDer, CertificateRevocationListDer, PrivateKeyDer, ServerName},
+        server::{Accepted, ResolvesServerCert},
+        sign::CertifiedKey,
+    };
+    use rustpython_host_env::ssl::{
+        CapturingClientSessionStore, ClientSessionKind, RecordCursor, SessionCache, SessionData,
+        TlsConnection,
+    };
+    use rustpython_vm::exceptions;
+
+    #[cfg(not(all(not(target_abi = "polyasm"), target_arch = "wasm32")))]
+    use crate::socket::{PySocket, SockWaitKind, sock_wait, timeout_error_msg};
     use crate::{
         common::{
             hash::PyHash,
@@ -72,43 +102,13 @@ mod _ssl {
         },
     };
 
-    #[cfg(target_arch = "wasm32")]
-    use super::sock_wait_stub::{SockWaitKind, timeout_error_msg};
-    #[cfg(not(target_arch = "wasm32"))]
-    use crate::socket::{PySocket, SockWaitKind, sock_wait, timeout_error_msg};
-
     // Import error types used in this module (others are exposed via pymodule(with(...)))
     use super::error::{
         PySSLError, PySSLWantReadError, PySSLWantWriteError, create_ssl_eof_error,
         create_ssl_want_read_error, create_ssl_want_write_error, create_ssl_zero_return_error,
     };
-    use alloc::sync::Arc;
-    use core::{
-        hash::{Hash, Hasher},
-        hint::cold_path,
-        sync::atomic::{AtomicUsize, Ordering},
-        time::Duration,
-    };
-    use rustpython_vm::exceptions;
-    use std::{
-        collections::{HashMap, hash_map::DefaultHasher},
-        time::SystemTime,
-    };
-
-    // Rustls imports
-    use parking_lot::RwLock as ParkingRwLock;
-    use pem_rfc7468::{LineEnding, encode_string};
-    use rustls::{
-        ClientConnection, Connection, HandshakeKind, RootCertStore,
-        crypto::SupportedKxGroup,
-        pki_types::{CertificateDer, CertificateRevocationListDer, PrivateKeyDer, ServerName},
-        server::{Accepted, ResolvesServerCert},
-        sign::CertifiedKey,
-    };
-    use rustpython_host_env::ssl::{
-        CapturingClientSessionStore, ClientSessionKind, RecordCursor, SessionCache, SessionData,
-        TlsConnection,
-    };
+    #[cfg(all(not(target_abi = "polyasm"), target_arch = "wasm32"))]
+    use super::sock_wait_stub::{SockWaitKind, timeout_error_msg};
 
     /// Caps unsent TLS so BIO writes stay inside asyncio's 64 KiB
     /// socket-transport high-water mark when SO_SNDBUF is small.

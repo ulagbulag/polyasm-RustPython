@@ -348,7 +348,7 @@ pub fn to_string(value: f64) -> String {
 
 #[must_use]
 pub fn from_hex(s: &str) -> Option<f64> {
-    if let Ok(f) = hexf_parse::parse_hexf64(s, false) {
+    if let Ok(f) = crate::hexf::parse_hexf64(s) {
         return Some(f);
     }
     match s.to_ascii_lowercase().as_str() {
@@ -390,7 +390,7 @@ pub fn from_hex(s: &str) -> Option<f64> {
                 hex.push_str(".p0")
             }
 
-            hexf_parse::parse_hexf64(hex.as_str(), false).ok()
+            crate::hexf::parse_hexf64(hex.as_str()).ok()
         }
     }
 }
@@ -463,7 +463,7 @@ mod tests {
             }
             let hex = to_hex(f);
             // println!("{} -> {}", f, hex);
-            let roundtrip = hexf_parse::parse_hexf64(&hex, false).unwrap();
+            let roundtrip = crate::hexf::parse_hexf64(&hex).unwrap();
             // println!("  -> {}", roundtrip);
             assert!(f == roundtrip, "{f} {hex} {roundtrip}");
         }

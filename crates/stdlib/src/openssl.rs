@@ -407,7 +407,7 @@ mod _ssl {
 
     fn get_cert_file_dir() -> (PathBuf, PathBuf) {
         cfg_select! {
-            all(openssl_vendored, not(target_arch = "wasm32")) => {
+            all(not(all(not(target_abi = "polyasm"), target_arch = "wasm32")), openssl_vendored) => {
                 let (cert_file, cert_dir) =
                     rustpython_host_env::native_certs::default_verify_paths();
                 (PathBuf::from(cert_file), PathBuf::from(cert_dir))

@@ -1,4 +1,9 @@
-use super::signature::Param;
+use core::ops::{Deref, DerefMut, RangeInclusive};
+use std::collections::hash_map::DefaultHasher;
+
+use indexmap::IndexMap;
+use itertools::Itertools;
+
 use crate::{
     AsObject, Py, PyObject, PyObjectRef, PyPayload, PyRef, PyResult, TryFromObject, VirtualMachine,
     builtins::{PyBaseExceptionRef, PyTupleRef, PyType},
@@ -6,10 +11,8 @@ use crate::{
     convert::ToPyObject,
     object::{Traverse, TraverseFn},
 };
-use core::ops::{Deref, DerefMut, RangeInclusive};
-use indexmap::IndexMap;
-use itertools::Itertools;
-use std::hash::DefaultHasher;
+
+use super::signature::Param;
 
 pub trait IntoFuncArgs: Sized {
     fn into_args(self, vm: &VirtualMachine) -> FuncArgs;

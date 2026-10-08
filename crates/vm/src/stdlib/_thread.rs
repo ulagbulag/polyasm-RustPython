@@ -42,7 +42,10 @@ pub(crate) mod _thread {
     #[cfg(any(unix, windows))]
     use rustpython_host_env::thread as host_thread;
 
-    #[cfg(all(not(target_arch = "wasm32"), feature = "host_env"))]
+    #[cfg(all(
+        feature = "host_env",
+        not(all(not(target_abi = "polyasm"), target_arch = "wasm32"))
+    ))]
     use crate::signal::SignalNum;
 
     // PYTHREAD_NAME: show current thread name
@@ -815,7 +818,10 @@ pub(crate) mod _thread {
         drop(guards);
     }
 
-    #[cfg(all(not(target_arch = "wasm32"), feature = "host_env"))]
+    #[cfg(all(
+        feature = "host_env",
+        not(all(not(target_abi = "polyasm"), target_arch = "wasm32"))
+    ))]
     #[derive(FromArgs)]
     struct InterruptMainArgs {
         // The signal enum's repr is not valid syntax in a text signature.
@@ -823,7 +829,10 @@ pub(crate) mod _thread {
         signum: OptionalArg<SignalNum>,
     }
 
-    #[cfg(all(not(target_arch = "wasm32"), feature = "host_env"))]
+    #[cfg(all(
+        feature = "host_env",
+        not(all(not(target_abi = "polyasm"), target_arch = "wasm32"))
+    ))]
     #[pyfunction]
     fn interrupt_main(args: InterruptMainArgs) -> PyResult<()> {
         let sig = args.signum.unwrap_or(SignalNum::SIGINT);

@@ -1,7 +1,22 @@
 //! A crate to hold types and functions common to all rustpython components.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(any(not(feature = "std"), target_abi = "polyasm"), no_std)]
+#![cfg_attr(
+    target_abi = "polyasm",
+    feature(prelude_import),
+    allow(internal_features)
+)]
 #![deny(clippy::disallowed_methods)]
+
+#[cfg(target_abi = "polyasm")]
+extern crate rustpython_std as std;
+#[cfg(target_abi = "polyasm")]
+#[prelude_import]
+#[allow(
+    unused_imports,
+    reason = "names reach the crate through prelude resolution"
+)]
+use std::prelude::rust_2024::*;
 
 extern crate alloc;
 

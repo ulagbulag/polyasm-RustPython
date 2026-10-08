@@ -574,19 +574,21 @@ mod _pyexpat {
     /// `ParserStream::try_spawn`, i.e. lazily, the first time this process
     /// spawns a parser thread -- so a process that never uses the threaded
     /// backend never touches `pthread_atfork` either.
-    #[cfg(all(not(target_arch = "wasm32"), unix))]
+    #[cfg(not(all(not(target_abi = "polyasm"), target_arch = "wasm32")))]
     fn ensure_atfork_hook_registered() {
-        static INIT: std::sync::Once = std::sync::Once::new();
-        INIT.call_once(|| unsafe {
-            libc::pthread_atfork(None, None, Some(mark_post_fork_child));
-        });
-    }
-
-    #[cfg(all(not(target_arch = "wasm32"), not(unix)))]
-    fn ensure_atfork_hook_registered() {
-        // No `fork()` (hence no `pthread_atfork`) on non-unix targets that
-        // still support threads (e.g. Windows); `POST_FORK_CHILD` simply
-        // never gets set there, which is correct.
+        cfg_select! {
+            unix => {
+                static INIT: std::sync::Once = std::sync::Once::new();
+                INIT.call_once(|| unsafe {
+                    libc::pthread_atfork(None, None, Some(mark_post_fork_child));
+                });
+            }
+            _ => {
+                // No `fork()` (hence no `pthread_atfork`) on non-unix targets that
+                // still support threads (e.g. Windows); `POST_FORK_CHILD` simply
+                // never gets set there, which is correct.
+            }
+        }
     }
 
     #[cfg(not(target_arch = "wasm32"))]

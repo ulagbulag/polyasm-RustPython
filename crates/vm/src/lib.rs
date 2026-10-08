@@ -5,7 +5,12 @@
 //! - Base objects
 //!
 //! Some stdlib modules are implemented here, but most of them are in the `rustpython-stdlib` module. The
-
+#![cfg_attr(
+    target_abi = "polyasm",
+    no_std,
+    feature(prelude_import),
+    allow(internal_features)
+)]
 #![deny(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(
     clippy::module_inception,
@@ -21,6 +26,16 @@ uppercase acronyms, e.g. TextIOWrapper instead of TextIoWrapper"
 )]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/RustPython/RustPython/main/logo.png")]
 #![doc(html_root_url = "https://docs.rs/rustpython-vm/")]
+
+#[cfg(target_abi = "polyasm")]
+extern crate rustpython_std as std;
+#[cfg(target_abi = "polyasm")]
+#[prelude_import]
+#[allow(
+    unused_imports,
+    reason = "names reach the crate through prelude resolution"
+)]
+use std::prelude::rust_2024::*;
 
 #[cfg(feature = "flame-it")]
 #[macro_use]

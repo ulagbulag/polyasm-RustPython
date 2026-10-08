@@ -43,7 +43,7 @@ web-sys = { workspace = true, features = [
     "Response"
 ] }
 
-[target.'cfg(all(target_arch = "wasm32", any(target_os = "unknown", target_os = "none")))'.dependencies]
+[target.'cfg(all(all(not(target_abi = "polyasm"), target_arch = "wasm32"), any(target_os = "none", target_os = "unknown")))'.dependencies]
 getrandom = { workspace = true, features = ["wasm_js"] }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 rustls = { workspace = true, default-features = false, features = ["std", "tls12", "custom-provider"] }

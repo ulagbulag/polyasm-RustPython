@@ -1,3 +1,20 @@
+#![cfg_attr(
+    target_abi = "polyasm",
+    no_std,
+    feature(prelude_import),
+    allow(internal_features)
+)]
+
+#[cfg(target_abi = "polyasm")]
+extern crate rustpython_std as std;
+#[cfg(target_abi = "polyasm")]
+#[prelude_import]
+#[allow(
+    unused_imports,
+    reason = "names reach the crate through prelude resolution"
+)]
+use std::prelude::rust_2024::*;
+
 extern crate alloc;
 
 use alloc::borrow::Cow;

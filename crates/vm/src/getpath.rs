@@ -380,24 +380,27 @@ fn env_executable_override() -> Option<String> {
 
 /// Get the current executable path
 fn get_executable_path() -> Option<PathBuf> {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let exec_arg = env::args_os().next()?;
-        crate::host_env::fs::which(exec_arg)
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        let exec_arg = env::args().next()?;
-        Some(PathBuf::from(exec_arg))
+    cfg_select! {
+        any(target_abi = "polyasm", target_arch = "wasm32") => {
+            let exec_arg = env::args().next()?;
+            Some(PathBuf::from(exec_arg))
+        }
+        _ => {
+            let exec_arg = env::args_os().next()?;
+            crate::host_env::fs::which(exec_arg)
+        }
     }
 }
 
 /// Parse pyvenv.cfg and extract the 'home' key value
 fn parse_pyvenv_home(pyvenv_cfg: &Path) -> Option<String> {
-    #[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
-    let content = crate::host_env::fs::read_to_string(pyvenv_cfg).ok()?;
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
-    let content = std::fs::read_to_string(pyvenv_cfg).ok()?;
+    let content = cfg_select! {
+        any(
+            not(all(not(target_abi = "polyasm"), target_arch = "wasm32")),
+            target_os = "wasi"
+        ) => crate::host_env::fs::read_to_string(pyvenv_cfg).ok()?,
+        _ => std::fs::read_to_string(pyvenv_cfg).ok()?,
+    };
 
     for line in content.lines() {
         if let Some((key, value)) = line.split_once('=')

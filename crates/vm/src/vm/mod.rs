@@ -110,10 +110,13 @@ pub struct VirtualMachine {
     /// Depth of native recursion that pushes no Python frame, counted only
     /// where the stack pointer cannot be read. Everywhere else the native
     /// stack itself answers, and nothing needs counting.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_abi = "polyasm", target_env = "musl"))]
     native_recursion_depth: Cell<usize>,
     /// C stack soft limit for detecting stack overflow (like c_stack_soft_limit)
-    #[cfg_attr(any(miri, target_env = "musl"), allow(dead_code))]
+    #[cfg_attr(
+        any(miri, target_abi = "polyasm", target_env = "musl"),
+        allow(dead_code)
+    )]
     c_stack_soft_limit: Cell<usize>,
     /// Async generator firstiter hook (per-thread, set via sys.set_asyncgen_hooks)
     pub async_gen_firstiter: RefCell<Option<PyObjectRef>>,
@@ -1272,7 +1275,7 @@ impl VirtualMachine {
             state,
             initialized: false,
             recursion_depth: Cell::new(0),
-            #[cfg(any(miri, target_env = "musl"))]
+            #[cfg(any(miri, target_abi = "polyasm", target_env = "musl"))]
             native_recursion_depth: Cell::new(0),
             c_stack_soft_limit: Cell::new(Self::calculate_c_stack_soft_limit()),
             async_gen_firstiter: RefCell::new(None),
@@ -1425,7 +1428,10 @@ impl VirtualMachine {
 
         let mut essential_init = || -> PyResult {
             import::import_builtin(self, "_typing")?;
-            #[cfg(all(not(target_arch = "wasm32"), feature = "host_env"))]
+            #[cfg(all(
+                feature = "host_env",
+                not(all(not(target_abi = "polyasm"), target_arch = "wasm32"))
+            ))]
             import::import_builtin(self, "_signal")?;
             #[cfg(any(feature = "parser", feature = "compiler"))]
             import::import_builtin(self, "_ast")?;
@@ -2473,7 +2479,10 @@ impl VirtualMachine {
     /// Stack margin bytes (like _PyOS_STACK_MARGIN_BYTES).
     /// The margin is doubled for debug/sanitized builds because frame
     /// evaluation consumes more native stack in those configurations.
-    #[cfg_attr(any(miri, target_env = "musl"), allow(dead_code))]
+    #[cfg_attr(
+        any(miri, target_abi = "polyasm", target_env = "musl"),
+        allow(dead_code)
+    )]
     // 2× CPython's _PY_STACK_MARGIN_BYTES to account for both heavy and
     // light frame native stack usage per recursion step.
     pub(crate) const STACK_MARGIN_BYTES: usize =
@@ -2483,65 +2492,64 @@ impl VirtualMachine {
     /// (`Py_C_RECURSION_LIMIT`). A native step costs far more stack than a
     /// Python one and debug builds cost more again, so this sits well under
     /// what a default stack holds rather than at what it would just fit.
-    #[cfg(any(miri, target_env = "musl"))]
+    #[cfg(any(miri, target_abi = "polyasm", target_env = "musl"))]
     const NATIVE_RECURSION_LIMIT_UNMEASURED: usize =
         if cfg!(debug_assertions) { 500 } else { 1500 };
 
     /// Get the stack boundaries using platform-specific APIs.
     /// Returns (base, top) where base is the lowest address and top is the highest.
-    #[cfg(all(not(miri), not(target_env = "musl"), windows))]
+    /// Off Windows it falls back to estimating based on current stack pointer.
+    #[cfg(all(not(miri), not(target_abi = "polyasm"), not(target_env = "musl")))]
     fn get_stack_bounds() -> (usize, usize) {
-        crate::host_env::windows::current_thread_stack_bounds()
-    }
-
-    /// Get stack boundaries on non-Windows platforms.
-    /// Falls back to estimating based on current stack pointer.
-    #[cfg(all(not(miri), not(target_env = "musl"), not(windows)))]
-    fn get_stack_bounds() -> (usize, usize) {
-        // Use pthread_attr_getstack on platforms that support it
-        #[cfg(any(target_os = "linux", target_os = "android"))]
-        {
-            use libc::{
-                pthread_attr_destroy, pthread_attr_getstack, pthread_attr_t, pthread_getattr_np,
-                pthread_self,
-            };
-            let mut attr: pthread_attr_t = unsafe { core::mem::zeroed() };
-            unsafe {
-                if pthread_getattr_np(pthread_self(), &mut attr) == 0 {
-                    let mut stack_addr: *mut libc::c_void = core::ptr::null_mut();
-                    let mut stack_size: libc::size_t = 0;
-                    if pthread_attr_getstack(&attr, &mut stack_addr, &mut stack_size) == 0 {
-                        pthread_attr_destroy(&mut attr);
-                        let base = stack_addr as usize;
-                        let top = base + stack_size;
-                        return (base, top);
+        cfg_select! {
+            windows => crate::host_env::windows::current_thread_stack_bounds(),
+            _ => {
+                // Use pthread_attr_getstack on platforms that support it
+                #[cfg(any(target_os = "android", target_os = "linux"))]
+                {
+                    use libc::{
+                        pthread_attr_destroy, pthread_attr_getstack, pthread_attr_t,
+                        pthread_getattr_np, pthread_self,
+                    };
+                    let mut attr: pthread_attr_t = unsafe { core::mem::zeroed() };
+                    unsafe {
+                        if pthread_getattr_np(pthread_self(), &mut attr) == 0 {
+                            let mut stack_addr: *mut libc::c_void = core::ptr::null_mut();
+                            let mut stack_size: libc::size_t = 0;
+                            if pthread_attr_getstack(&attr, &mut stack_addr, &mut stack_size) == 0 {
+                                pthread_attr_destroy(&mut attr);
+                                let base = stack_addr as usize;
+                                let top = base + stack_size;
+                                return (base, top);
+                            }
+                            pthread_attr_destroy(&mut attr);
+                        }
                     }
-                    pthread_attr_destroy(&mut attr);
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    use libc::{pthread_get_stackaddr_np, pthread_get_stacksize_np, pthread_self};
+                    unsafe {
+                        let thread = pthread_self();
+                        let stack_top = pthread_get_stackaddr_np(thread) as usize;
+                        let stack_size = pthread_get_stacksize_np(thread);
+                        let stack_base = stack_top - stack_size;
+                        return (stack_base, stack_top);
+                    }
+                }
+
+                // Fallback: estimate based on current SP and a default stack size
+                #[allow(unreachable_code)]
+                {
+                    let current_sp = psm::stack_pointer() as usize;
+                    // Assume 8MB stack, estimate base
+                    let estimated_size = 8 * 1024 * 1024;
+                    let base = current_sp.saturating_sub(estimated_size);
+                    let top = current_sp + 1024 * 1024; // Assume we're not at the very top
+                    (base, top)
                 }
             }
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            use libc::{pthread_get_stackaddr_np, pthread_get_stacksize_np, pthread_self};
-            unsafe {
-                let thread = pthread_self();
-                let stack_top = pthread_get_stackaddr_np(thread) as usize;
-                let stack_size = pthread_get_stacksize_np(thread);
-                let stack_base = stack_top - stack_size;
-                return (stack_base, stack_top);
-            }
-        }
-
-        // Fallback: estimate based on current SP and a default stack size
-        #[allow(unreachable_code)]
-        {
-            let current_sp = psm::stack_pointer() as usize;
-            // Assume 8MB stack, estimate base
-            let estimated_size = 8 * 1024 * 1024;
-            let base = current_sp.saturating_sub(estimated_size);
-            let top = current_sp + 1024 * 1024; // Assume we're not at the very top
-            (base, top)
         }
     }
 
@@ -2550,39 +2558,36 @@ impl VirtualMachine {
     /// The margin is clamped to half the stack so threads created with a stack
     /// smaller than 2 * (2 * margin) still get usable headroom instead of a
     /// soft limit above their stack top (which would trip on entry).
-    #[cfg(all(not(miri), not(target_env = "musl")))]
-    fn calculate_c_stack_soft_limit() -> usize {
-        let (base, top) = Self::get_stack_bounds();
-        let stack_size = top.saturating_sub(base);
-        let margin = (Self::STACK_MARGIN_BYTES * 2).min(stack_size / 2);
-        base + margin
-    }
-
     /// Musl currently reports stack bounds in a way that trips the VM's
     /// native stack guard during frozen stdlib bootstrap, so keep the Python
     /// recursion limit as the only guard there.
-    #[cfg(any(miri, target_env = "musl"))]
     fn calculate_c_stack_soft_limit() -> usize {
-        0
+        cfg_select! {
+            any(miri, target_abi = "polyasm", target_env = "musl") => 0,
+            _ => {
+                let (base, top) = Self::get_stack_bounds();
+                let stack_size = top.saturating_sub(base);
+                let margin = (Self::STACK_MARGIN_BYTES * 2).min(stack_size / 2);
+                base + margin
+            }
+        }
     }
 
     /// Check if we're near the C stack limit (like _Py_MakeRecCheck).
     /// One-sided: any stack pointer below the soft limit is in danger, since a
     /// single native frame can exceed the margin and step past it.
-    #[cfg(all(not(miri), not(target_env = "musl")))]
-    #[inline(always)]
-    pub(crate) fn check_c_stack_overflow(&self) -> bool {
-        let current_sp = psm::stack_pointer() as usize;
-        let soft_limit = self.c_stack_soft_limit.get();
-        current_sp < soft_limit
-    }
-
     /// Miri does not support the native stack probe, and musl currently trips
     /// the probe during stdlib bootstrap.
-    #[cfg(any(miri, target_env = "musl"))]
     #[inline(always)]
     pub(crate) fn check_c_stack_overflow(&self) -> bool {
-        false
+        cfg_select! {
+            any(miri, target_abi = "polyasm", target_env = "musl") => false,
+            _ => {
+                let current_sp = psm::stack_pointer() as usize;
+                let soft_limit = self.c_stack_soft_limit.get();
+                current_sp < soft_limit
+            }
+        }
     }
 
     /// Used to run the body of a (possibly) recursive function. It will raise a
@@ -2596,11 +2601,12 @@ impl VirtualMachine {
         // `check_c_stack_overflow()` answers no unconditionally where the stack
         // pointer cannot be read, which would leave this guard with nothing to
         // stop. A count of the nesting stands in for the measurement there.
-        #[cfg(any(miri, target_env = "musl"))]
-        let counted_too_deep =
-            self.native_recursion_depth.get() >= Self::NATIVE_RECURSION_LIMIT_UNMEASURED;
-        #[cfg(not(any(miri, target_env = "musl")))]
-        let counted_too_deep = false;
+        let counted_too_deep = cfg_select! {
+            any(miri, target_abi = "polyasm", target_env = "musl") => {
+                self.native_recursion_depth.get() >= Self::NATIVE_RECURSION_LIMIT_UNMEASURED
+            }
+            _ => false,
+        };
 
         if counted_too_deep || self.check_c_stack_overflow() {
             return Err(
@@ -2608,7 +2614,7 @@ impl VirtualMachine {
             );
         }
 
-        #[cfg(any(miri, target_env = "musl"))]
+        #[cfg(any(miri, target_abi = "polyasm", target_env = "musl"))]
         let _native_depth_guard = {
             self.native_recursion_depth.update(|d| d + 1);
             scopeguard::guard((), |()| {

@@ -2,20 +2,32 @@
 
 /// Return the platform `strerror(errno)` message as an owned `String`.
 /// Returns `None` when the runtime gives no description for `errno`.
-#[cfg(any(unix, windows))]
+#[cfg(any(target_abi = "polyasm", unix, windows))]
 #[must_use]
 pub fn strerror_string(errno: i32) -> Option<String> {
-    let ptr = unsafe { libc::strerror(errno) };
-    if ptr.is_null() {
-        return None;
+    cfg_select! {
+        target_abi = "polyasm" => std::os::polyasm::errno::strerror(errno).map(str::to_owned),
+        _ => {
+            let ptr = unsafe { libc::strerror(errno) };
+            if ptr.is_null() {
+                return None;
+            }
+            let s = unsafe { core::ffi::CStr::from_ptr(ptr) }.to_string_lossy();
+            Some(s.into_owned())
+        }
     }
-    let s = unsafe { core::ffi::CStr::from_ptr(ptr) }.to_string_lossy();
-    Some(s.into_owned())
 }
 
-#[cfg(any(unix, windows, target_os = "wasi"))]
+#[cfg(any(target_abi = "polyasm", target_os = "wasi", unix, windows))]
 pub mod errors {
-    pub use libc::*;
+    cfg_select! {
+        target_abi = "polyasm" => {
+            pub use std::os::polyasm::errno::*;
+        }
+        _ => {
+            pub use libc::*;
+        }
+    }
     #[cfg(windows)]
     pub use windows_sys::Win32::{
         Foundation::*,
